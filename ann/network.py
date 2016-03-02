@@ -139,7 +139,8 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
-        return (output_activations - y)
+        tmp = (output_activations - y)
+        return tmp
 
     def cost_value(self, output_activations, y):
         """Return the MSE loss function value between

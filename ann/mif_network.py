@@ -12,9 +12,12 @@ and omits many desirable features.
 import random
 import numpy as np
 import math
+import utils.mnist_loader as mload
+from sklearn.metrics import f1_score
+
 
 class MifNetwork(object):
-    def __init__(self, sizes, alpha=1.0, beta=0.0):
+    def __init__(self, sizes, alpha=25.0, beta=0.0):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -29,19 +32,20 @@ class MifNetwork(object):
         self.sizes = sizes
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
-        # progress report
-        self.mif_smooth_progress = []
-        self.mif_discrete_progress = []
         self.alpha = alpha
         self.beta = beta
         # for discrete mF1
+        self.threshold = 0.5
         self.num_positive_lbls = 0
         self.correct = 0
         self.false_alarm = 0
         # for smooth mF1
         self.smooth_correct = 0.0
         self.smooth_false_alarm = 0.0
+        # progress report
         self.progress_step = 10000
+        self.mif_smooth_progress = []
+        self.mif_discrete_progress = []
 
 
     def feedforward(self, a):
@@ -53,14 +57,14 @@ class MifNetwork(object):
 
     def evaluate(self, test_data):
         """Calculate discrete MicroF1 value."""
+        # forwarding data, transform targets to binary
+        net_data = [(self.feedforward(x), mload.vectorized_result(y))
+                    for x, y in test_data]
+        net_predicts, refs = zip(*net_data)
+        # threshold net output
+        pred_labs = [0.5 * (np.sign(x - self.threshold) + 1) for x in net_predicts]
 
-    # """Return the number of test inputs for which the neural
-    # network outputs the correct result. Note that the neural
-    # network's output is assumed to be the index of whichever
-    #     neuron in the final layer has the highest activation."""
-    #     test_results = [(np.argmax(self.feedforward(x)), y)
-    #                     for (x, y) in test_data]
-    #     return sum(int(x == y) for (x, y) in test_results)
+        return f1_score(refs, pred_labs, average='micro')
 
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -135,7 +139,7 @@ class MifNetwork(object):
         last = a[-1]
         last_e = np.exp(last)
         sum = np.sum(last_e)
-        a[-1] = (last_e / sum).tolist()
+        a[-1] = last_e / sum
         return a
 
 
@@ -168,8 +172,7 @@ class MifNetwork(object):
     def __cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial F_x /
         \partial z for the output activations."""
-        diff = []  # result
-        np = 0  # TP + FN
+        npos = 0  # TP + FN
         # discrete thresholded counters
         tp = 0
         fp = 0
@@ -179,44 +182,46 @@ class MifNetwork(object):
         # derivative of loss
         dl = []
         num_ftrs = len(output_activations)
+        diff = np.empty(y.shape)  # result
         ebeta = math.exp(-self.beta)
 
         for fId in xrange(num_ftrs):
-            dk = (num_ftrs - 1) * output_activations[fId] / (1.0 - output_activations[fId])
+            dk = (num_ftrs - 1) * output_activations[fId][0] / (1.0 - output_activations[fId][0])
             l = 1.0 / (1.0 + pow(dk, self.alpha) * ebeta)
 
             # smooth FN, FP, TP using loss function
             if y[fId] > 0:
                 # count all positive labels: np = |C_k| = TP_k + FN_k
-                np += 1
+                npos += 1
                 smooth_tp += 1.0 - l
-                if l < 0.5: tp += 1
+                if l < self.threshold: tp += 1
             else:
                 smooth_fp += 1.0 - l
+                if l < self.threshold: fp += 1
             dl.append(self.alpha * l * (1.0 - l))
 
         # sum of rows of Jacobian matrix dl/dz
         for fId in xrange(num_ftrs):
-            sum_dl = -dl[fId] / (1.0 - output_activations[fId])
+            sum_dl = -dl[fId] / (1.0 - output_activations[fId][0])
             for xId in xrange(num_ftrs):
-                sum_dl += dl[xId] * output_activations[fId] / (1.0 - output_activations[xId])
-                dsigma = output_activations[fId] * (1.0 - output_activations[fId])
-                diff[fId] = dsigma * sum_dl
+                sum_dl += dl[xId] * output_activations[fId][0] / (1.0 - output_activations[xId][0])
+            dsigma = output_activations[fId][0] * (1.0 - output_activations[fId][0])
+            diff[fId][0] = dsigma * sum_dl
 
         # the gradient of mF1 objective function
-        a2 = (smooth_tp + smooth_fp + np) * (smooth_tp + smooth_fp + np)
+        a2 = (smooth_tp + smooth_fp + npos) * (smooth_tp + smooth_fp + npos)
         # if x_i in C_k
-        scale_pos = 2.0 * (smooth_fp + np) / a2
+        scale_pos = 2.0 * (smooth_fp + npos) / a2
         # if x_i not in C_k
         scale_neg = -2.0 * smooth_tp / a2
         for fId in xrange(num_ftrs):
             if y[fId] > 0:
-                diff[fId] *= scale_pos
+                diff[fId][0] *= scale_pos
             else:
-                diff[fId] *= scale_neg
+                diff[fId][0] *= scale_neg
 
         # for discrete micro F1
-        self.num_positive_lbls += np
+        self.num_positive_lbls += npos
         self.correct += tp
         self.false_alarm += fp
         # for smoothed micro F1
@@ -251,6 +256,7 @@ if __name__ == '__main__':
     mini_batch = 10
     learn_rate = 3.0
     net = MifNetwork([784, 30, 10])
-    err, loss = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    #err, loss = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    err, loss = net.SGD(training_data, epochs, mini_batch, learn_rate)
     print(err)
     print(loss)
