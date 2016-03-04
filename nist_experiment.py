@@ -118,8 +118,8 @@ if exp == 'nist_mse':
 
 " " " random feedback alignment experiment " " "
 if exp == 'nist_rfa':
-    all_loss = []  # [[13, 10, 9, 7, 5], [12, 10, 7, 5, 3], [11, 8, 7, 5, 3]]
-    all_eval = []  # [[9000, 9210, 9302, 9490, 9500], [9100, 9210, 9202, 9450, 9600], [9100, 9140, 9252, 9470, 9560]]
+    all_loss = []
+    all_eval = []
     for i in xrange(0, num_exp):
         print('Experiment number: {0}'.format(i))
         net = rnd_feedback_network.RFANetwork([784, 30, 10])
@@ -147,12 +147,8 @@ if exp == 'nist_rfa':
                 ylab='MSE value',
                 fname=nist_exp_path + exp + '_loss_progress.png')
 
-
-
-
-
-# microF1 metric
-# m = sk.f1_score(y_true=, y_pred=, average='micro')
+" " " MFoM micro F1 experiment " " "
+#if exp == 'nist_mfom':
 
 
 

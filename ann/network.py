@@ -89,7 +89,7 @@ class Network(object):
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b - (eta / len(mini_batch)) * nb
                        for b, nb in zip(self.biases, nabla_b)]
-        return batch_loss/len(mini_batch)
+        return batch_loss / len(mini_batch)
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
@@ -139,14 +139,12 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
-        tmp = (output_activations - y)
-        return tmp
+        return (output_activations - y)
 
     def cost_value(self, output_activations, y):
         """Return the MSE loss function value between
          the network output and target label y."""
         return mean_squared_error(y_true=y, y_pred=output_activations)
-
 
 
 def sigmoid(z):
@@ -157,16 +155,20 @@ def sigmoid_prime(z):
     """Derivative of the sigmoid function."""
     return sigmoid(z) * (1 - sigmoid(z))
 
+
 if __name__ == '__main__':
+    import time
     from utils import mnist_loader
 
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     print("MNIST data is loaded...")
-    # MSE network with sigmoid output layer
-    epochs = 30
+    epochs = 1
     mini_batch = 10
     learn_rate = 3.0
     net = Network([784, 30, 10])
+    start_time = time.time()
     acc, loss = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    end_time = time.time()
     print(acc)
     print(loss)
+    print("Time: " + str(end_time - start_time))

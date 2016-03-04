@@ -12,12 +12,12 @@ and omits many desirable features.
 import random
 import numpy as np
 import math
+import time
 import utils.mnist_loader as mload
-from sklearn.metrics import f1_score
 
 
 class MifNetwork(object):
-    def __init__(self, sizes, alpha=25.0, beta=0.0):
+    def __init__(self, sizes, alpha=100.0, beta=0.0):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -43,7 +43,7 @@ class MifNetwork(object):
         self.smooth_correct = 0.0
         self.smooth_false_alarm = 0.0
         # progress report
-        self.progress_step = 10000
+        self.progress_step = 1000
         self.mif_smooth_progress = []
         self.mif_discrete_progress = []
 
@@ -60,11 +60,11 @@ class MifNetwork(object):
         # forwarding data, transform targets to binary
         net_data = [(self.feedforward(x), mload.vectorized_result(y))
                     for x, y in test_data]
-        net_predicts, refs = zip(*net_data)
+        net_predicts = [xy[0] for xy in net_data]
+        refs = [xy[1] for xy in net_data]
         # threshold net output
-        pred_labs = [0.5 * (np.sign(x - self.threshold) + 1) for x in net_predicts]
-
-        return f1_score(refs, pred_labs, average='micro')
+        pred_labs = [step(x, self.threshold) for x in net_predicts]
+        return micro_f1(refs, pred_labs, False)
 
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -85,7 +85,7 @@ class MifNetwork(object):
             for mini_batch in mini_batches:
                 self.__update_mini_batch(mini_batch, eta)
                 count += 1
-                if count > self.progress_step:
+                if divmod(count, self.progress_step)[1] == 0:
                     print("batch {0}: loss = {1}".format(count, self.__cost_value()))
             smoothF1 = self.__cost_value()
             self.mif_smooth_progress.append(smoothF1)
@@ -93,7 +93,7 @@ class MifNetwork(object):
             if test_data:
                 mF1 = self.evaluate(test_data)
                 self.mif_discrete_progress.append(mF1)
-                print("Epoch {0}: microF1 = {1}, loss = {3}".format(j, mF1, smoothF1))
+                print("Epoch {0}: microF1 = {1}, loss = {2}".format(j, mF1, smoothF1))
             else:
                 print("Epoch {0} complete, loss = {1}".format(j, smoothF1))
         return (self.mif_discrete_progress, self.mif_smooth_progress)
@@ -245,18 +245,56 @@ def sigmoid_prime(z):
     return sigmoid(z) * (1 - sigmoid(z))
 
 
+def step(a, threshold=0.0):
+    """Heaviside step function:
+    a < threshold = 0, else 1.
+    Input: array
+    Output: array"""
+    res = [[0] if x < threshold else [1] for x in a ]
+    return np.array(res) # need column
+
+
+def micro_f1(refs, predicts, accuracy=True):
+    """Input: binary integer list of arrays"""
+    assert(len(refs) == len(predicts))
+    neg_r = np.logical_not(refs)
+    neg_p = np.logical_not(predicts)
+    tp = np.sum(np.logical_and(refs, predicts) == True)
+    fp = np.sum(np.logical_and(neg_r, predicts) == True)
+    fn = np.sum(np.logical_and(refs, neg_p) == True)
+    f1 = 100.0 * 2.0 * tp / (2.0*tp + fp + fn)
+    return accuracy and f1 or 100.0 - f1
+
+
 if __name__ == '__main__':
     from utils import mnist_loader
+    from ann.network import Network
 
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     print("MNIST data is loaded...")
 
     # MSE network with sigmoid output layer
-    epochs = 30
+
+    epochs = 5
     mini_batch = 10
-    learn_rate = 3.0
-    net = MifNetwork([784, 30, 10])
-    #err, loss = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
-    err, loss = net.SGD(training_data, epochs, mini_batch, learn_rate)
+    learn_rate = 4.0
+    architecture = [784, 30, 10]
+    start_time = time.time()
+    net1 = Network(architecture)
+    err, loss = net1.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
     print(err)
     print(loss)
+    print("Finetuning...")
+    epochs = 10
+    mini_batch = 10
+    learn_rate = 0.0001
+    net2 = MifNetwork(architecture)
+    net2.biases = net1.biases
+    net2.weights = net1.weights
+    print("Micro F1 before MFoM training: {0}".format(net2.evaluate(test_data)))
+    err, loss = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    end_time = time.time()
+    total_time = end_time - start_time
+    print(err)
+    print(loss)
+    print("Time: " + str(total_time))
