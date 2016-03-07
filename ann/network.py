@@ -131,7 +131,8 @@ class Network(object):
         network outputs the correct result. Note that the neural
         network's output is assumed to be the index of whichever
         neuron in the final layer has the highest activation."""
-        test_results = [(np.argmax(self.feedforward(x)), y)
+
+        test_results = [(np.argmax(self.feedforward(x)), np.argmax(y))
                         for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
 
@@ -162,7 +163,7 @@ if __name__ == '__main__':
 
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     print("MNIST data is loaded...")
-    epochs = 1
+    epochs = 10
     mini_batch = 10
     learn_rate = 3.0
     net = Network([784, 30, 10])

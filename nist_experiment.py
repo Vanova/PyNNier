@@ -1,7 +1,9 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import time
 from utils import mnist_loader
 from ann import network
+from ann import mif_network
 from ann import rnd_feedback_network
 
 
@@ -147,8 +149,34 @@ if exp == 'nist_rfa':
                 ylab='MSE value',
                 fname=nist_exp_path + exp + '_loss_progress.png')
 
+
 " " " MFoM micro F1 experiment " " "
-#if exp == 'nist_mfom':
+if exp == 'nist_mfom':
+    # pretraining with
+    epochs = 5
+    mini_batch = 10
+    learn_rate = 4.0
+    architecture = [784, 30, 10]
+    start_time = time.time()
+    net1 = network.Network(architecture)
+    err, loss = net1.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    print(err)
+    print(loss)
+    print("Finetuning...")
+    epochs = 10
+    mini_batch = 10
+    learn_rate = 0.0001
+    net2 = mif_network.MifNetwork(architecture)
+    net2.biases = net1.biases
+    net2.weights = net1.weights
+    print("Micro F1 before MFoM training: {0}".format(net2.evaluate(test_data)))
+    err, loss = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    end_time = time.time()
+    total_time = end_time - start_time
+    print(err)
+    print(loss)
+    print("Time: " + str(total_time))
+
 
 
 

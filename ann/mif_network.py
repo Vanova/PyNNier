@@ -56,9 +56,10 @@ class MifNetwork(object):
 
 
     def evaluate(self, test_data):
-        """Calculate discrete MicroF1 value."""
-        # forwarding data, transform targets to binary
-        net_data = [(self.feedforward(x), mload.vectorized_result(y))
+        """Calculate discrete MicroF1 value.
+        Input: tuple list of ndarrays (data, target),
+        targets should be binary vector"""
+        net_data = [(self.feedforward(x), y)
                     for x, y in test_data]
         net_predicts = [xy[0] for xy in net_data]
         refs = [xy[1] for xy in net_data]
@@ -152,8 +153,6 @@ class MifNetwork(object):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
 
         # backward pass
-        # TODO fix here
-        # loss = self.cost_value(net_out[-1], y)
         # calculate network error signal
         delta = self.__cost_derivative(net_acts[-1], y)
         nabla_b[-1] = delta
@@ -272,26 +271,13 @@ if __name__ == '__main__':
 
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     print("MNIST data is loaded...")
-
-    # MSE network with sigmoid output layer
-
-    epochs = 5
-    mini_batch = 10
-    learn_rate = 4.0
-    architecture = [784, 30, 10]
-    start_time = time.time()
-    net1 = Network(architecture)
-    err, loss = net1.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
-    print(err)
-    print(loss)
-    print("Finetuning...")
     epochs = 10
     mini_batch = 10
-    learn_rate = 0.0001
+    learn_rate = 0.001
+    architecture = [784, 30, 10]
     net2 = MifNetwork(architecture)
-    net2.biases = net1.biases
-    net2.weights = net1.weights
-    print("Micro F1 before MFoM training: {0}".format(net2.evaluate(test_data)))
+    print("MFoM micro F1 training...")
+    start_time = time.time()
     err, loss = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
     end_time = time.time()
     total_time = end_time - start_time
