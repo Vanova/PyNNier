@@ -13,8 +13,7 @@ import random
 import numpy as np
 import math
 import time
-import utils.mnist_loader as mload
-
+from functions import metrics
 
 class MifNetwork(object):
     def __init__(self, sizes, alpha=100.0, beta=0.0):
@@ -30,6 +29,7 @@ class MifNetwork(object):
         ever used in computing the outputs from later layers."""
         self.num_layers = len(sizes)
         self.sizes = sizes
+        np.random.seed(888)
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
         self.alpha = alpha
@@ -65,7 +65,7 @@ class MifNetwork(object):
         refs = [xy[1] for xy in net_data]
         # threshold net output
         pred_labs = [step(x, self.threshold) for x in net_predicts]
-        return micro_f1(refs, pred_labs, False)
+        return metrics.micro_f1(refs, pred_labs, False)
 
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -94,7 +94,7 @@ class MifNetwork(object):
             if test_data:
                 mF1 = self.evaluate(test_data)
                 self.mif_discrete_progress.append(mF1)
-                print("Epoch {0}: microF1 = {1}, loss = {2}".format(j, mF1, smoothF1))
+                print("Epoch {0}: F1_error_tst = {1}, F1_smooth_loss = {2}".format(j, mF1, smoothF1))
             else:
                 print("Epoch {0} complete, loss = {1}".format(j, smoothF1))
         return (self.mif_discrete_progress, self.mif_smooth_progress)
@@ -253,18 +253,6 @@ def step(a, threshold=0.0):
     return np.array(res) # need column
 
 
-def micro_f1(refs, predicts, accuracy=True):
-    """Input: binary integer list of arrays"""
-    assert(len(refs) == len(predicts))
-    neg_r = np.logical_not(refs)
-    neg_p = np.logical_not(predicts)
-    tp = np.sum(np.logical_and(refs, predicts) == True)
-    fp = np.sum(np.logical_and(neg_r, predicts) == True)
-    fn = np.sum(np.logical_and(refs, neg_p) == True)
-    f1 = 100.0 * 2.0 * tp / (2.0*tp + fp + fn)
-    return accuracy and f1 or 100.0 - f1
-
-
 if __name__ == '__main__':
     from utils import mnist_loader
     from ann.network import Network
@@ -273,7 +261,7 @@ if __name__ == '__main__':
     print("MNIST data is loaded...")
     epochs = 10
     mini_batch = 10
-    learn_rate = 0.001
+    learn_rate = 0.1
     architecture = [784, 30, 10]
     net2 = MifNetwork(architecture)
     print("MFoM micro F1 training...")

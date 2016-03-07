@@ -97,7 +97,6 @@ def plot_toy(train_data, test_data, dev_data, feature_dim):
     if feature_dim > 3:
         print("Not implemented...")
 
-
 # TODO:
 # 1. implement NN saving
 # 2. plot model weights
@@ -114,14 +113,14 @@ train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst
 
 # simple toy experiment
 # 1. MSE loss and Sigmoid outputs
-epochs = 100
-mini_batch = 25
-learn_rate = 0.001
-architecture = [2, 2]
+epochs = 1000
+mini_batch = 250
+learn_rate = 1.0
+architecture = [feature_dim, 2]
 start_time = time.time()
-net1 = network.Network(architecture)
-err, loss = net1.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
-print(err)
+net2 = mif_network.MifNetwork(architecture)
+eval, loss = net2.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
+print(eval)
 print(loss)
 
 # print('The data was generated from (random_state=%d):' % 1)

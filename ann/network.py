@@ -9,10 +9,12 @@ simple, easily readable, and easily modifiable.  It is not optimized,
 and omits many desirable features.
 """
 
+import json
+import sys
 import random
 import numpy as np
 from sklearn.metrics import mean_squared_error
-
+from functions import metrics
 
 class Network(object):
     def __init__(self, sizes):
@@ -28,9 +30,12 @@ class Network(object):
         ever used in computing the outputs from later layers."""
         self.num_layers = len(sizes)
         self.sizes = sizes
+        self.threshold_f1 = 0.5
+        np.random.seed(888)
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
-        self.loss_progress = []
+        self.eval_err_progress = []
+        self.loss_tr_progress = []
 
 
     def feedforward(self, a):
@@ -50,7 +55,6 @@ class Network(object):
         network will be evaluated against the test data after each
         epoch, and partial progress printed out.  This is useful for
         tracking progress, but slows things down substantially."""
-        eval_acc = []
         if test_data: n_test = len(test_data)
         n = len(training_data)
         for j in xrange(epochs):
@@ -62,14 +66,18 @@ class Network(object):
             for mini_batch in mini_batches:
                 mean_loss += self.update_mini_batch(mini_batch, eta)
             mean_loss = mean_loss / len(mini_batch)
-            self.loss_progress.append(mean_loss)
+            self.loss_tr_progress.append(mean_loss)
             if test_data:
                 err = self.evaluate(test_data)
-                eval_acc.append(err)
-                print("Epoch {0}: {1} / {2}, loss = {3}".format(j, err, n_test, mean_loss))
+                true_pos = self.correct_count(test_data)
+                self.eval_err_progress.append(err)
+                # print("Epoch {0}: F1_error_tst = {1}, MSE_loss = {2}, TP = {3} / {4}".
+                #       format(j, err, mean_loss, true_pos, n_test))
+                print("Epoch {0}: F1_error_tst = {1}, MSE_loss = {2}".
+                      format(j, err, mean_loss))
             else:
                 print("Epoch {0} complete, loss = {1}".format(j, mean_loss))
-        return (eval_acc, self.loss_progress)
+        return (self.eval_err_progress, self.loss_tr_progress)
 
 
     def update_mini_batch(self, mini_batch, eta):
@@ -90,6 +98,7 @@ class Network(object):
         self.biases = [b - (eta / len(mini_batch)) * nb
                        for b, nb in zip(self.biases, nabla_b)]
         return batch_loss / len(mini_batch)
+
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
@@ -126,15 +135,28 @@ class Network(object):
             nabla_w[-l] = np.dot(delta, activations[-l - 1].transpose())
         return (nabla_b, nabla_w, loss)
 
-    def evaluate(self, test_data):
+
+    def correct_count(self, test_data):
         """Return the number of test inputs for which the neural
         network outputs the correct result. Note that the neural
         network's output is assumed to be the index of whichever
         neuron in the final layer has the highest activation."""
-
+        # count number of right answers
         test_results = [(np.argmax(self.feedforward(x)), np.argmax(y))
-                        for (x, y) in test_data]
+                       for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
+
+
+    def evaluate(self, test_data):
+        """Return micro F1 error on test data"""
+        predicts = []
+        refs = []
+        for x, y in test_data:
+            # thresholded prediction
+            p = metrics.step(self.feedforward(x), self.threshold_f1)
+            predicts.append(p)
+            refs.append(y)
+        return metrics.micro_f1(refs=refs, predicts=predicts, accuracy=False)
 
 
     def cost_derivative(self, output_activations, y):
@@ -142,10 +164,22 @@ class Network(object):
         \partial a for the output activations."""
         return (output_activations - y)
 
+
     def cost_value(self, output_activations, y):
         """Return the MSE loss function value between
          the network output and target label y."""
         return mean_squared_error(y_true=y, y_pred=output_activations)
+
+
+    def save(self, filename):
+        """Save the neural network to the file ``filename``."""
+        # TODO fix "cost": str(self.cost.__name__)
+        data = {"sizes": self.sizes,
+                "weights": [w.tolist() for w in self.weights],
+                "biases": [b.tolist() for b in self.biases]}
+        f = open(filename, "w")
+        json.dump(data, f)
+        f.close()
 
 
 def sigmoid(z):
@@ -156,6 +190,18 @@ def sigmoid_prime(z):
     """Derivative of the sigmoid function."""
     return sigmoid(z) * (1 - sigmoid(z))
 
+#### Loading a Network
+def load(filename):
+    """Load a neural network from the file ``filename``.  Returns an
+    instance of Network.
+    """
+    f = open(filename, "r")
+    data = json.load(f)
+    f.close()
+    net = Network(data["sizes"])
+    net.weights = [np.array(w) for w in data["weights"]]
+    net.biases = [np.array(b) for b in data["biases"]]
+    return net
 
 if __name__ == '__main__':
     import time
@@ -163,13 +209,23 @@ if __name__ == '__main__':
 
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     print("MNIST data is loaded...")
-    epochs = 10
+    epochs = 1
     mini_batch = 10
     learn_rate = 3.0
     net = Network([784, 30, 10])
+    file_net = "./data/experiment/nist/nist_epo_{0}_btch_{1}_lr_{2}".\
+        format(epochs, mini_batch, learn_rate)
+    # training
     start_time = time.time()
-    acc, loss = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    f1, loss = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    print(f1)
+    print(loss)
     end_time = time.time()
-    print(acc)
+    # save
+    net.save(file_net)
+    # test load
+    net2 = load(file_net)
+    f1, loss = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    print(f1)
     print(loss)
     print("Time: " + str(end_time - start_time))
