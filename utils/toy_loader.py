@@ -38,3 +38,12 @@ def plot_format(data):
         it = y.T.tolist()
         ys.append(it[0])
     return (np.array(xs), np.array(ys))
+
+
+def plot_format_no_ticks(data):
+    """Return lists xs, ys with row arrays"""
+    xs = []
+    for x in data:
+        it = x.T.tolist()
+        xs.append(it[0])
+    return np.array(xs)

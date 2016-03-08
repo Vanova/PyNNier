@@ -10,9 +10,10 @@ and omits many desirable features.
 """
 
 import random
-import numpy as np
 import math
 import time
+import json
+import numpy as np
 from functions import metrics
 
 class MifNetwork(object):
@@ -233,6 +234,28 @@ class MifNetwork(object):
         """Return the smoothed MicroF1 value."""
         return 100.0 - 200.0 * self.smooth_correct / \
                        (self.smooth_correct + self.num_positive_lbls + self.smooth_false_alarm)
+
+    def save(self, filename):
+        """Save the neural network to the file ``filename``."""
+        # TODO fix "cost": str(self.cost.__name__)
+        data = {"sizes": self.sizes,
+                "weights": [w.tolist() for w in self.weights],
+                "biases": [b.tolist() for b in self.biases]}
+        f = open(filename, "w")
+        json.dump(data, f)
+        f.close()
+
+def load(filename):
+    """Load a neural network from the file ``filename``.  Returns an
+    instance of Network.
+    """
+    f = open(filename, "r")
+    data = json.load(f)
+    f.close()
+    net = MifNetwork(data["sizes"])
+    net.weights = [np.array(w) for w in data["weights"]]
+    net.biases = [np.array(b) for b in data["biases"]]
+    return net
 
 
 def sigmoid(z):
