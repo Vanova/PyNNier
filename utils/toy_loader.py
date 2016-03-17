@@ -4,11 +4,11 @@ from sklearn.datasets import make_multilabel_classification
 RANDOM_SEED = 888
 
 
-def load_data(n_tr=250, n_dev=50, n_tst=50, n_features=2):
+def load_data(n_tr=250, n_dev=50, n_tst=50, n_features=2, n_classes=2):
     n_samples = n_tr + n_tst + n_dev
     # generate data
     x, y, p_c, p_w_c = make_multilabel_classification(n_samples=n_samples, n_features=n_features,
-                                                      n_classes=2, n_labels=1,
+                                                      n_classes=n_classes, n_labels=1,
                                                       allow_unlabeled=False,
                                                       return_distributions=True,
                                                       random_state=RANDOM_SEED)

@@ -17,7 +17,7 @@ import numpy as np
 from functions import metrics
 
 class MifNetwork(object):
-    def __init__(self, sizes, alpha=100.0, beta=0.0):
+    def __init__(self, sizes, alpha=10.0, beta=0.0):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
         was [2, 3, 1] then it would be a three-layer network, with the
@@ -172,6 +172,7 @@ class MifNetwork(object):
     def __cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial F_x /
         \partial z for the output activations."""
+        num_ftrs = len(output_activations)
         npos = 0  # TP + FN
         # discrete thresholded counters
         tp = 0
@@ -181,13 +182,16 @@ class MifNetwork(object):
         smooth_fp = 0.0
         # derivative of loss
         dl = []
-        num_ftrs = len(output_activations)
+        # normalization
+        summ = np.sum(np.exp(output_activations), axis=0)
+        norma = np.exp(output_activations)/summ
+
         diff = np.empty(y.shape)  # result
         ebeta = math.exp(-self.beta)
-
+        # TODO fix vectorization
         for fId in xrange(num_ftrs):
-            dk = (num_ftrs - 1) * output_activations[fId][0] / (1.0 - output_activations[fId][0])
-            l = 1.0 / (1.0 + pow(dk, self.alpha) * ebeta)
+            dk = (num_ftrs - 1) * (1.0 / 1.0 - norma[fId][0])
+            l = 1.0 / (1.0 + pow(dk, -self.alpha) * ebeta)
 
             # smooth FN, FP, TP using loss function
             if y[fId] > 0:
@@ -202,10 +206,10 @@ class MifNetwork(object):
 
         # sum of rows of Jacobian matrix dl/dz
         for fId in xrange(num_ftrs):
-            sum_dl = -dl[fId] / (1.0 - output_activations[fId][0])
+            sum_dl = -dl[fId] / (1.0 - norma[fId][0])
             for xId in xrange(num_ftrs):
-                sum_dl += dl[xId] * output_activations[fId][0] / (1.0 - output_activations[xId][0])
-            dsigma = output_activations[fId][0] * (1.0 - output_activations[fId][0])
+                sum_dl += dl[xId] * norma[fId][0] / (1.0 - norma[xId][0])
+            dsigma = norma[fId][0] * (1.0 - norma[fId][0])
             diff[fId][0] = dsigma * sum_dl
 
         # the gradient of mF1 objective function
