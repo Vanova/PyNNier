@@ -15,8 +15,12 @@ import time
 import json
 import numpy as np
 from functions import metrics
+import ann.cost_functions as cf
+
 
 class MifNetwork(object):
+    TRUE_LABEL = 1
+
     def __init__(self, sizes, alpha=10.0, beta=0.0):
         """The list ``sizes`` contains the number of neurons in the
         respective layers of the network.  For example, if the list
@@ -30,11 +34,10 @@ class MifNetwork(object):
         ever used in computing the outputs from later layers."""
         self.num_layers = len(sizes)
         self.sizes = sizes
-        np.random.seed(888)
-        self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
         self.alpha = alpha
         self.beta = beta
+        np.random.seed(888)
+        self.default_weight_initializer()
         # for discrete mF1
         self.threshold = 0.5
         self.num_positive_lbls = 0
@@ -49,10 +52,16 @@ class MifNetwork(object):
         self.mif_discrete_progress = []
 
 
+    def default_weight_initializer(self):
+        self.biases = [np.random.randn(y, 1) for y in self.sizes[1:]]
+        self.weights = [np.random.randn(y, x) / np.sqrt(x)
+                        for x, y in zip(self.sizes[:-1], self.sizes[1:])]
+
+
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
-            a = sigmoid(np.dot(w, a) + b)
+            a = cf.sigmoid(np.dot(w, a) + b)
         return a
 
 
@@ -60,12 +69,10 @@ class MifNetwork(object):
         """Calculate discrete MicroF1 value.
         Input: tuple list of ndarrays (data, target),
         targets should be binary vector"""
-        net_data = [(self.feedforward(x), y)
-                    for x, y in test_data]
-        net_predicts = [xy[0] for xy in net_data]
-        refs = [xy[1] for xy in net_data]
+        net_predicts = [self.feedforward(xy[0]) for xy in test_data]
+        refs = [xy[1] for xy in test_data]
         # threshold net output
-        pred_labs = [step(x, self.threshold) for x in net_predicts]
+        pred_labs = [cf.step(x, self.threshold) for x in net_predicts]
         return metrics.micro_f1(refs, pred_labs, False)
 
 
@@ -106,132 +113,142 @@ class MifNetwork(object):
         gradient descent using backpropagation to a single mini batch.
         The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
         is the learning rate."""
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
+        data, lab = zip(*mini_batch)
+        # forward data through the net
+        activations, lab_pred = self.__propagate_on_batch(data)
+        # back propagate and calculate gradient on the whole batch
+        nabla_b, nabla_w = self.__backprop_on_batch(activations, lab_pred, lab)
 
-        for x, y in mini_batch:  # for every training sample x
-            # 1. propagate the sample,
-            # get activations on every layer
-            net_acts = self.__propagate(x)
-            # 2. normalize network output signal
-            norm_out_acts = self.__normalize_net_out(net_acts)
-            # 3. backprop
-            delta_nabla_b, delta_nabla_w = self.__backprop(norm_out_acts, y)
-            nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
-            nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
         self.weights = [w - (eta / len(mini_batch)) * nw
                         for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b - (eta / len(mini_batch)) * nb
                        for b, nb in zip(self.biases, nabla_b)]
 
 
+    def __propagate_on_batch(self, mini_batch):
+        """
+        :return: list, TODO fix  every element is a 2D array with all layers activations
+        for current sample in batch
+        """
+        acts = []
+        predicts = []
+        for x in mini_batch:  # for every training sample x
+            # propagate the sample,
+            # get activations on every layer
+            net_acts = self.__propagate(x)
+            acts.append(net_acts)
+            predicts.append(net_acts[-1])
+        return acts, predicts
+
+
     def __propagate(self, x):
-        """Return activations on every layer of the network"""
+        """Return activations on every layer of the network for sample x
+        :param x: column np array
+        """
         activation = x
         activations = [x]  # list to store all the activations, layer by layer
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation) + b
-            activation = sigmoid(z)
+            activation = cf.sigmoid(z)
             activations.append(activation)
         return activations
 
 
-    def __normalize_net_out(self, a):
-        """Normalize the last network activation, i.e. output"""
-        last = a[-1]
-        last_e = np.exp(last)
-        sum = np.sum(last_e)
-        a[-1] = last_e / sum
-        return a
+    def __backprop_on_batch(self, batch_acts, lab_pred, lab):
+        """
+        Calculate back propagation on the mini-batch
+        :param batch_acts: list of lists with activation arrays on every net layer
+        :param lab_pred: list of arrays with net outputs,
+        just a copy of the last layer activations
+        :param lab: data labels
+        :return: gradient DF/DW on the mini batch
+        """
+        ### calculate network error signal
+        batch_delta = self.__cost_derivative(lab_pred, lab)
 
-
-    def __backprop(self, net_acts, y):
-        """Return a tuple ``(nabla_b, nabla_w)`` representing the
-        gradient for the cost function C_x.  ``nabla_b`` and
-        ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
-        to ``self.biases`` and ``self.weights``."""
+        # gradient on the mini batch
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
+        # partial derivative on every sample
+        delta_nabla_b = [np.zeros(b.shape) for b in self.biases]
+        delta_nabla_w = [np.zeros(w.shape) for w in self.weights]
 
-        # backward pass
-        # calculate network error signal
-        delta = self.__cost_derivative(net_acts[-1], y)
-        nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta, net_acts[-2].transpose())
-
-        # start from the output of network, last layer l=-1
-        for l in xrange(2, self.num_layers):
-            a = net_acts[-l]
-            sp = a * (1 - a)
-            delta = np.dot(self.weights[-l + 1].transpose(), delta) * sp
-            nabla_b[-l] = delta
-            nabla_w[-l] = np.dot(delta, net_acts[-l - 1].transpose())
+        for delta, acts in zip(batch_delta, batch_acts):
+            delta_nabla_b[-1] = delta
+            delta_nabla_w[-1] = np.dot(delta, acts[-2].transpose())
+            # start from the output of network, last layer l=-1
+            for l in xrange(2, self.num_layers):
+                a = acts[-l]
+                sp = a * (1 - a)
+                delta = np.dot(self.weights[-l + 1].transpose(), delta) * sp
+                delta_nabla_b[-l] = delta
+                delta_nabla_w[-l] = np.dot(delta, acts[-l - 1].transpose())
+            # sum up the gradient
+            nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
+            nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
         return (nabla_b, nabla_w)
 
 
-    def __cost_derivative(self, output_activations, y):
-        """Return the vector of partial derivatives \partial F_x /
-        \partial z for the output activations."""
-        num_ftrs = len(output_activations)
-        npos = 0  # TP + FN
+    def __cost_derivative(self, lab_pred, lab):
+        """Return the list of partial derivatives \partial F_x /\partial z
+        for the output activations.
+        F = 2TP/(FP + TP + npos),
+        npos = TP + FN - number of positive samples
+        :param lab_pred: network output on batch, list of arrays
+        :return diff: list of gradients on each sample prediction
+        """
+        npos = 0
         # discrete thresholded counters
-        tp = 0
-        fp = 0
+        # tp, fp = 0, 0
         # smooth approximation
-        smooth_tp = 0.0
-        smooth_fp = 0.0
-        # derivative of loss
-        dl = []
-        # normalization
-        summ = np.sum(np.exp(output_activations), axis=0)
-        norma = np.exp(output_activations)/summ
-
-        diff = np.empty(y.shape)  # result
+        smooth_tp, smooth_fp = 0.0, 0.0
+        diff = []
+        nclass, _ = lab_pred[0].shape
+        dl = np.array((nclass, 1))
         ebeta = math.exp(-self.beta)
-        # TODO fix vectorization
-        for fId in xrange(num_ftrs):
-            dk = (num_ftrs - 1) * (1.0 / 1.0 - norma[fId][0])
-            l = 1.0 / (1.0 + pow(dk, -self.alpha) * ebeta)
 
-            # smooth FN, FP, TP using loss function
-            if y[fId] > 0:
-                # count all positive labels: np = |C_k| = TP_k + FN_k
-                npos += 1
-                smooth_tp += 1.0 - l
-                if l < self.threshold: tp += 1
-            else:
-                smooth_fp += 1.0 - l
-                if l < self.threshold: fp += 1
-            dl.append(self.alpha * l * (1.0 - l))
+        for p, y in zip(lab_pred, lab):
+            ### normalization
+            sum = np.sum(np.exp(p), axis=0)
+            normp = np.exp(p) / sum
+            ### strategy function
+            dk = (nclass - 1) * normp / (1.0 - normp)
+            l = 1.0 / (1.0 + np.power(dk, self.alpha) * ebeta)
 
-        # sum of rows of Jacobian matrix dl/dz
-        for fId in xrange(num_ftrs):
-            sum_dl = -dl[fId] / (1.0 - norma[fId][0])
-            for xId in xrange(num_ftrs):
-                sum_dl += dl[xId] * norma[fId][0] / (1.0 - norma[xId][0])
-            dsigma = norma[fId][0] * (1.0 - norma[fId][0])
-            diff[fId][0] = dsigma * sum_dl
+            npos += (y == 1).sum()
+            smooth_tp += np.sum((1.0 - l) * y, axis=0)[0]
+            smooth_fp += np.sum((1.0 - l) * np.logical_not(y), axis=0)[0]
 
-        # the gradient of mF1 objective function
+            Dl = self.alpha * l * (1.0 - l)
+            ### sum of rows of Jacobian matrix dl/dz
+            # TODO check this inference
+            off_diag = np.empty((nclass, 1))
+            diag = Dl / (1.0 - normp)
+            sd = np.sum(diag, axis=0)
+            off_diag.fill(sd[0])
+            #off_diag.fill(0.0)
+            sumJ = (off_diag * normp - diag) * p * (1.0 - p)
+            diff.append(sumJ)
+
+        ### the gradient of mF1 objective function
         a2 = (smooth_tp + smooth_fp + npos) * (smooth_tp + smooth_fp + npos)
-        # if x_i in C_k
+        # if x_i in class C_k
         scale_pos = 2.0 * (smooth_fp + npos) / a2
-        # if x_i not in C_k
+        # if x_i not in class C_k
         scale_neg = -2.0 * smooth_tp / a2
-        for fId in xrange(num_ftrs):
-            if y[fId] > 0:
-                diff[fId][0] *= scale_pos
-            else:
-                diff[fId][0] *= scale_neg
+        for i in xrange(len(diff)):
+            # masked multiplication
+            pos = diff[i] * scale_pos * lab[i]
+            neg = diff[i] * scale_neg * np.logical_not(lab[i])
+            diff[i] = pos + neg
 
         # for discrete micro F1
+        # self.correct += tp
+        # self.false_alarm += fp
+        # micro F1 progress
         self.num_positive_lbls += npos
-        self.correct += tp
-        self.false_alarm += fp
-        # for smoothed micro F1
         self.smooth_correct += smooth_tp
         self.smooth_false_alarm += smooth_fp
-
         return diff
 
     def __cost_value(self):
@@ -241,13 +258,13 @@ class MifNetwork(object):
 
     def save(self, filename):
         """Save the neural network to the file ``filename``."""
-        # TODO fix "cost": str(self.cost.__name__)
         data = {"sizes": self.sizes,
                 "weights": [w.tolist() for w in self.weights],
                 "biases": [b.tolist() for b in self.biases]}
         f = open(filename, "w")
         json.dump(data, f)
         f.close()
+
 
 def load(filename):
     """Load a neural network from the file ``filename``.  Returns an
@@ -262,34 +279,18 @@ def load(filename):
     return net
 
 
-def sigmoid(z):
-    return 1.0 / (1.0 + np.exp(-z))
-
-
-def sigmoid_prime(z):
-    """Derivative of the sigmoid function."""
-    return sigmoid(z) * (1 - sigmoid(z))
-
-
-def step(a, threshold=0.0):
-    """Heaviside step function:
-    a < threshold = 0, else 1.
-    Input: array
-    Output: array"""
-    res = [[0] if x < threshold else [1] for x in a ]
-    return np.array(res) # need column
-
-
 if __name__ == '__main__':
     from utils import mnist_loader
-    from ann.network import Network
+    from utils import toy_loader
 
-    training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+    # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+    training_data, validation_data, test_data = toy_loader.load_data(n_features=3)
     print("MNIST data is loaded...")
     epochs = 10
-    mini_batch = 10
+    mini_batch = 5
     learn_rate = 0.1
-    architecture = [784, 30, 10]
+    architecture = [3, 10, 2]
+    # architecture = [784, 30, 10]
     net2 = MifNetwork(architecture)
     print("MFoM micro F1 training...")
     start_time = time.time()

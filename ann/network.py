@@ -1,12 +1,6 @@
 """
-network.py
-~~~~~~~~~~
-
-A module to implement the stochastic gradient descent learning
-algorithm for a feedforward neural network.  Gradients are calculated
-using backpropagation.  Note that I have focused on making the code
-simple, easily readable, and easily modifiable.  It is not optimized,
-and omits many desirable features.
+~~~~~~~~~~~~~~
+Based on Michael Nielsen
 """
 
 import json
@@ -15,33 +9,34 @@ import random
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from functions import metrics
+import cost_functions as cf
 
 class Network(object):
-    def __init__(self, sizes):
-        """The list ``sizes`` contains the number of neurons in the
-        respective layers of the network.  For example, if the list
-        was [2, 3, 1] then it would be a three-layer network, with the
-        first layer containing 2 neurons, the second layer 3 neurons,
-        and the third layer 1 neuron.  The biases and weights for the
-        network are initialized randomly, using a Gaussian
-        distribution with mean 0, and variance 1.  Note that the first
-        layer is assumed to be an input layer, and by convention we
-        won't set any biases for those neurons, since biases are only
-        ever used in computing the outputs from later layers."""
+    def __init__(self, sizes, ):
+        """
+        :param sizes: list contains the number of neurons in the respective
+        layers of the network, e.g. [2, 3, 1].
+        """
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.threshold_f1 = 0.5
+        # random weights and bias initialization
         np.random.seed(888)
-        self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y, x) for x, y in zip(sizes[:-1], sizes[1:])]
+        self.default_weight_initializer()
         self.eval_err_progress = []
         self.loss_tr_progress = []
+
+
+    def default_weight_initializer(self):
+        self.biases = [np.random.randn(y, 1) for y in self.sizes[1:]]
+        self.weights = [np.random.randn(y, x) / np.sqrt(x)
+                        for x, y in zip(self.sizes[:-1], self.sizes[1:])]
 
 
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
-            a = sigmoid(np.dot(w, a) + b)
+            a = cf.sigmoid(np.dot(w, a) + b)
         return a
 
 
@@ -114,11 +109,11 @@ class Network(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation) + b
             zs.append(z)
-            activation = sigmoid(z)
+            activation = cf.sigmoid(z)
             activations.append(activation)
-        # backward pass
         loss = self.cost_value(activations[-1], y)
-        delta = self.cost_derivative(activations[-1], y) * sigmoid_prime(zs[-1])
+        # backward pass
+        delta = self.cost_derivative(activations[-1], y) * cf.sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Note that the variable l in the loop below is used a little
@@ -129,7 +124,7 @@ class Network(object):
         # that Python can use negative indices in lists.
         for l in xrange(2, self.num_layers):
             z = zs[-l]
-            sp = sigmoid_prime(z)
+            sp = cf.sigmoid_prime(z)
             delta = np.dot(self.weights[-l + 1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l - 1].transpose())
@@ -153,7 +148,7 @@ class Network(object):
         refs = []
         for x, y in test_data:
             # thresholded prediction
-            p = metrics.step(self.feedforward(x), self.threshold_f1)
+            p = cf.step(self.feedforward(x), self.threshold_f1)
             predicts.append(p)
             refs.append(y)
         return metrics.micro_f1(refs=refs, predicts=predicts, accuracy=False)
@@ -182,14 +177,6 @@ class Network(object):
         f.close()
 
 
-def sigmoid(z):
-    return 1.0 / (1.0 + np.exp(-z))
-
-
-def sigmoid_prime(z):
-    """Derivative of the sigmoid function."""
-    return sigmoid(z) * (1 - sigmoid(z))
-
 def load(filename):
     """Load a neural network from the file ``filename``.  Returns an
     instance of Network.
@@ -208,7 +195,7 @@ if __name__ == '__main__':
 
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     print("MNIST data is loaded...")
-    epochs = 1
+    epochs = 10
     mini_batch = 10
     learn_rate = 3.0
     net = Network([784, 30, 10])
