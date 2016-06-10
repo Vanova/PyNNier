@@ -3,3 +3,6 @@
 # ignore intellij files
 .idea/
 
+# ipython book tmp folde
+.ipynb_checkpoints
+
