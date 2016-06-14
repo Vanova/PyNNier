@@ -150,7 +150,9 @@ if exp == 'nist_rfa':
                 fname=nist_exp_path + exp + '_loss_progress.png')
 
 
-" " " MFoM micro F1 experiment " " "
+'''
+MFoM micro F1 experiment
+'''
 if exp == 'nist_mfom':
     # pretraining with
     epochs = 5
