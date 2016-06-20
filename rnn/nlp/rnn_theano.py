@@ -5,7 +5,9 @@ from utils import *
 import operator
 
 class RNNTheano:
-    
+
+    # TODO extend with biases!!!
+
     def __init__(self, word_dim, hidden_dim=100, bptt_truncate=4):
         # Assign instance variables
         self.word_dim = word_dim

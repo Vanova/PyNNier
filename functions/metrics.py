@@ -7,6 +7,7 @@ def micro_f1(refs, predicts, accuracy=True):
         several hot-labels
     :return: accuracy or error of micro F1
     """
+    # TODO example of usage
     assert(len(refs) == len(predicts))
     neg_r = np.logical_not(refs)
     neg_p = np.logical_not(predicts)
