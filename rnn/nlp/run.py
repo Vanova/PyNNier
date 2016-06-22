@@ -1,12 +1,23 @@
-import nltk
-import lib
-import itertools
 import timeit
-import numpy as np
-import model.rnn_numpy as rp
-import optimizer
 
-def generate_sentence(model):
+import numpy as np
+
+import lib
+import model.rnn_numpy as rp
+from rnn.nlp.model import optimizer
+
+
+def generate_sentence(model, num_sentences=1, senten_min_length=3):
+    for i in range(num_sentences):
+        sent = []
+        # We want long sentences, not sentences with one or two words
+        while len(sent) < senten_min_length:
+            sent = generating(model)
+        print " ".join(sent)
+    return sent
+
+
+def generating(model):
     # We start the sentence with the start token
     new_sentence = [word_to_index[lib.SENTENCE_START_TOKEN]]
     # Repeat until we get an end token
@@ -15,7 +26,7 @@ def generate_sentence(model):
         sampled_word = word_to_index[lib.UNKNOWN_TOKEN]
         # We don't want to sample unknown words
         while sampled_word == word_to_index[lib.UNKNOWN_TOKEN]:
-            # Draw samples from a multinomial distribution, with probabilit y_0
+            # Draw samples from a multinomial distribution, with probabilit y_t
             samples = np.random.multinomial(1, next_word_probs[0][-1])
             sampled_word = np.argmax(samples)
         new_sentence.append(sampled_word)
@@ -48,15 +59,7 @@ print "Time of one sgd step %f" % ((t2 - t1) * 1000)
 np.random.seed(10)
 model = rp.RNNNumpy(lib.VOCABULARY_SIZE)
 losses = optimizer.train_with_sgd_numpy(model, X_train[:100], y_train[:100], nepoch=1, evaluate_loss_after=1)
-
 print(losses)
 
-num_sentences = 15
-senten_min_length = 7
-
-for i in range(num_sentences):
-    sent = []
-    # We want long sentences, not sentences with one or two words
-    while len(sent) < senten_min_length:
-        sent = generate_sentence(model)
-    print " ".join(sent)
+# produce sentences from model
+sent = generate_sentence(model, num_sentences=3, senten_min_length=7)

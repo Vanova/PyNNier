@@ -1,12 +1,6 @@
-#! /usr/bin/env python
-
-import csv
-import itertools
 import os
 import time
-
-import nltk
-
+import model.optimizer as optim
 from lib import *
 from rnn.nlp.model.rnn_theano import RNNTheano
 
@@ -67,4 +61,5 @@ print "SGD Step time: %f milliseconds" % ((t2 - t1) * 1000.)
 if _MODEL_FILE != None:
     load_model_parameters_theano(_MODEL_FILE, model)
 
-train_with_sgd(model, X_train, y_train, nepoch=_NEPOCH, learning_rate=_LEARNING_RATE)
+losses = optim.train_with_sgd_theano(model, X_train, y_train, nepoch=_NEPOCH, learning_rate=_LEARNING_RATE)
+print "Loss values: " % losses

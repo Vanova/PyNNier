@@ -1,11 +1,11 @@
 import operator
 import numpy as np
-import sys
 import rnn.nlp.lib as lib
-from datetime import datetime
 
 #### Main class used to construct and train networks
 class RNNNumpy:
+    # TODO add parameters array in order to save
+
     def __init__(self, word_dim, hidden_dim=100, bptt_truncate=4):
         # Assign instance variables
         self.word_dim = word_dim

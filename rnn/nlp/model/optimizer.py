@@ -1,7 +1,6 @@
-import lib
+import rnn.nlp.lib
 import sys
 from datetime import datetime
-
 
 def train():
     pass
@@ -10,14 +9,16 @@ def test():
     pass
 
 
-# Outer SGD Loop
-# - model: The RNN model instance
-# - X_train: The training data set
-# - y_train: The training data labels
-# - learning_rate: Initial learning rate for SGD
-# - nepoch: Number of times to iterate through the complete dataset
-# - evaluate_loss_after: Evaluate the loss after this many epochs
 def train_with_sgd_numpy(model, X_train, y_train, learning_rate=0.005, nepoch=100, evaluate_loss_after=5):
+    """
+    Outer SGD Loop
+    model: The RNN model instance
+    X_train: The training data set
+    y_train: The training data labels
+    learning_rate: Initial learning rate for SGD
+    nepoch: Number of times to iterate through the complete dataset
+    evaluate_loss_after: Evaluate the loss after this many epochs
+    """
     # We keep track of the losses so we can plot them later
     losses = []
     num_examples_seen = 0
@@ -57,8 +58,8 @@ def train_with_sgd_theano(model, X_train, y_train, learning_rate=0.005, nepoch=1
                 learning_rate = learning_rate * 0.5
                 print "Setting learning rate to %f" % learning_rate
             sys.stdout.flush()
-            # ADDED! Saving model oarameters
-            lib.save_model_parameters_theano("./data/model-theano-%d-%d-%s.npz" % (model.hidden_dim, model.word_dim, time), model)
+            # ADDED! Saving model parameters
+            rnn.nlp.lib.save_model_parameters_theano("./data/model-theano-%d-%d-%s.npz" % (model.hidden_dim, model.word_dim, time), model)
         # For each training example...
         for i in range(len(y_train)):
             # One SGD step

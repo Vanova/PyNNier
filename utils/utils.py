@@ -1,12 +1,14 @@
 import logging
+import sys
+from datetime import datetime
 
-
-
+# print log to standard output
+def log(string):
+    sys.stderr.write('[' + str(datetime.now()) + '] ' + str(string) + '\n')
 
 def get_logger(file_name):
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(file_name)
-
     return logger
 
 
