@@ -26,7 +26,7 @@ def generate_sentence(model):
 # Tokenize the sentences into words
 tokenized_sentences, word_to_index, index_to_word, vocab = lib.preprocess_data('data/war_n_peace.txt')
 
-# Create the training data
+# Create the training data: map words into indeces
 X_train = np.asarray([[word_to_index[w] for w in sent[:-1]] for sent in tokenized_sentences])
 y_train = np.asarray([[word_to_index[w] for w in sent[1:]] for sent in tokenized_sentences])
 
@@ -35,24 +35,8 @@ x_example, y_example = X_train[17], y_train[17]
 print "x:\n%s\n%s" % (" ".join([index_to_word[x] for x in x_example]), x_example)
 print "\ny:\n%s\n%s" % (" ".join([index_to_word[x] for x in y_example]), y_example)
 
-### Test prediction
-np.random.seed(777)
-model = rp.RNNNumpy(lib.VOCABULARY_SIZE)
-o, s = model.forward_propagation(X_train[10])
-print o.shape
-print o
-
-predictions = model.predict(X_train[10])
-print predictions.shape
-print predictions
-
-### Test loos function
-# Limit to 1000 examples to save time
-print "Expected Loss for random predictions: %f" % np.log(lib.VOCABULARY_SIZE)
-print "Actual loss: %f" % model.calculate_loss(X_train[:1000], y_train[:1000])
-
 ### Test running time for one step
-np.random.seed(10)
+np.random.seed(777)
 model = rp.RNNNumpy(lib.VOCABULARY_SIZE)
 
 t1 = timeit.default_timer()
@@ -76,7 +60,3 @@ for i in range(num_sentences):
     while len(sent) < senten_min_length:
         sent = generate_sentence(model)
     print " ".join(sent)
-
-# TODO infere gradience
-# e.g. fortification cup it pleasure rubles convince hospital
-# opposition : burn operating obeyed lord
