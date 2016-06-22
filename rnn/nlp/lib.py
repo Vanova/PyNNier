@@ -39,7 +39,6 @@ def preprocess_data(text_filename):
         # Split full text into sentences
         lst = []
         for x in reader:
-            print(repr(x))
             if x:
                 low_case = nltk.sent_tokenize(x[0].decode('utf-8').lower())
                 lst.append(low_case)

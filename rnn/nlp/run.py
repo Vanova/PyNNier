@@ -79,17 +79,17 @@ model = rp.RNNNumpy(lib.VOCABULARY_SIZE)
 t1 = timeit.default_timer()
 model.numpy_sdg_step(X_train[10], y_train[10], 0.005)
 t2 = timeit.default_timer()
-print "Time of one sgd step %f" % (t2 - t1) * 1000
+print "Time of one sgd step %f" % ((t2 - t1) * 1000)
 
 # Train on a small subset of the data to see what happens
 np.random.seed(10)
 model = rp.RNNNumpy(lib.VOCABULARY_SIZE)
-losses = optimizer.train_with_sgd(model, X_train[:100], y_train[:100], nepoch=100, evaluate_loss_after=1)
+losses = optimizer.train_with_sgd_numpy(model, X_train[:100], y_train[:100], nepoch=1, evaluate_loss_after=1)
 
 print(losses)
 
 num_sentences = 15
-senten_min_length = 15
+senten_min_length = 7
 
 for i in range(num_sentences):
     sent = []
