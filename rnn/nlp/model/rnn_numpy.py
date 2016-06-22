@@ -7,7 +7,7 @@ import nltk
 import timeit
 import sys
 from datetime import datetime
-from utils import *
+from rnn.nlp.lib import *
 
 vocabulary_size = 8000
 unknown_token = "UNKNOWN_TOKEN"
@@ -167,28 +167,6 @@ def train_with_sgd(model, X_train, y_train, learning_rate=0.005, nepoch=100, eva
             # One SGD step
             model.numpy_sdg_step(X_train[i], y_train[i], learning_rate)
             num_examples_seen += 1
-
-
-def preprocess_data(text_filename):
-    # Read the data and append SENTENCE_START and SENTENCE_END tokens
-    print "Reading CSV file..."
-    with open(text_filename, 'rb') as f:  #
-        reader = csv.reader(f, skipinitialspace=True)
-        reader.next()
-        reader.next()
-        # Split full text into sentences
-        lst = []
-        for x in reader:
-            print(repr(x))
-            if x:
-                low_case = nltk.sent_tokenize(x[0].decode('utf-8').lower())
-                lst.append(low_case)
-
-        sentences = itertools.chain(*lst)
-        # Append SENTENCE_START and SENTENCE_END
-        sentences = ["%s %s %s" % (sentence_start_token, x, sentence_end_token) for x in sentences]
-    print "Parsed %d sentences." % (len(sentences))
-    return sentences
 
 
 def generate_sentence(model):

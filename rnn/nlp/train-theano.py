@@ -2,15 +2,13 @@
 
 import csv
 import itertools
-import operator
-import numpy as np
-import nltk
-import sys
 import os
 import time
-from datetime import datetime
-from utils import *
-from rnn_theano import RNNTheano
+
+import nltk
+
+from lib import *
+from rnn.nlp.model.rnn_theano import RNNTheano
 
 _VOCABULARY_SIZE = int(os.environ.get('VOCABULARY_SIZE', '8000'))
 _HIDDEN_DIM = int(os.environ.get('HIDDEN_DIM', '80'))

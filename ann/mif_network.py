@@ -280,8 +280,8 @@ def load(filename):
 
 
 if __name__ == '__main__':
-    from utils import mnist_loader
-    from utils import toy_loader
+    from lib import mnist_loader
+    from lib import toy_loader
 
     # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     training_data, validation_data, test_data = toy_loader.load_data(n_features=3)
