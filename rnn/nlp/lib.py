@@ -1,4 +1,13 @@
+import itertools
+import nltk
+import csv
 import numpy as np
+
+VOCABULARY_SIZE = 8000
+UNKNOWN_TOKEN = "UNKNOWN_TOKEN"
+SENTENCE_START_TOKEN = "SENTENCE_START"
+SENTENCE_END_TOKEN = "SENTENCE_END"
+
 
 def softmax(x):
     xt = np.exp(x - np.max(x))
@@ -37,6 +46,6 @@ def preprocess_data(text_filename):
 
         sentences = itertools.chain(*lst)
         # Append SENTENCE_START and SENTENCE_END
-        sentences = ["%s %s %s" % (sentence_start_token, x, sentence_end_token) for x in sentences]
+        sentences = ["%s %s %s" % (SENTENCE_START_TOKEN, x, SENTENCE_END_TOKEN) for x in sentences]
     print "Parsed %d sentences." % (len(sentences))
     return sentences

@@ -1,5 +1,3 @@
-import csv
-import itertools
 import theano
 import operator
 import numpy as np
@@ -7,13 +5,7 @@ import nltk
 import timeit
 import sys
 from datetime import datetime
-from rnn.nlp.lib import *
-
-vocabulary_size = 8000
-unknown_token = "UNKNOWN_TOKEN"
-sentence_start_token = "SENTENCE_START"
-sentence_end_token = "SENTENCE_END"
-
+import rnn.nlp.lib as lib
 
 #### Main class used to construct and train networks
 class RNNNumpy:
@@ -40,7 +32,7 @@ class RNNNumpy:
         for t in np.arange(T):
             # Note that we are indexing U by x[t]. This is the same as multiplying U with a one-hot vector.
             s[t] = np.tanh(self.U[:, x[t]] + self.W.dot(s[t - 1]))
-            o[t] = softmax(self.V.dot(s[t]))
+            o[t] = lib.softmax(self.V.dot(s[t]))
         return [o, s]
 
     def predict(self, x):
@@ -87,6 +79,7 @@ class RNNNumpy:
                 # Update delta for next step
                 delta_t = self.W.T.dot(delta_t) * (1 - s[bptt_step - 1] ** 2)
         return [dLdU, dLdV, dLdW]
+
 
     def gradient_check(self, x, y, h=0.001, error_threshold=0.01):
         # Calculate the gradients using backpropagation. We want to checker if these are correct.
@@ -171,13 +164,13 @@ def train_with_sgd(model, X_train, y_train, learning_rate=0.005, nepoch=100, eva
 
 def generate_sentence(model):
     # We start the sentence with the start token
-    new_sentence = [word_to_index[sentence_start_token]]
+    new_sentence = [word_to_index[lib.SENTENCE_START_TOKEN]]
     # Repeat until we get an end token
-    while not new_sentence[-1] == word_to_index[sentence_end_token]:
+    while not new_sentence[-1] == word_to_index[lib.SENTENCE_END_TOKEN]:
         next_word_probs = model.forward_propagation(new_sentence)
-        sampled_word = word_to_index[unknown_token]
+        sampled_word = word_to_index[lib.UNKNOWN_TOKEN]
         # We don't want to sample unknown words
-        while sampled_word == word_to_index[unknown_token]:
+        while sampled_word == word_to_index[lib.UNKNOWN_TOKEN]:
             # Draw samples from a multinomial distribution, with probabilit y_0
             samples = np.random.multinomial(1, next_word_probs[0][-1])
             sampled_word = np.argmax(samples)
@@ -195,7 +188,7 @@ def save_trainingset(file_name):
 
 
 # Tokenize the sentences into words
-sentences = preprocess_data('data/war_n_peace.txt')
+sentences = lib.preprocess_data('data/war_n_peace.txt')
 tokenized_sentences = [nltk.word_tokenize(sent) for sent in sentences]
 
 # Count the word frequencies
@@ -277,13 +270,12 @@ for i in range(num_sentences):
     print " ".join(sent)
 
 # TODO infere gradience
-# TODO how do we sample next word?
 # e.g. fortification cup it pleasure rubles convince hospital
 # opposition : burn operating obeyed lord
 
 if __name__ == 'main':
     np.random.seed(10)
-    model = RNNNumpy(vocabulary_size)
+    model = RNNNumpy(lib.VOCABULARY_SIZE)
     o, s = model.forward_propagation(X_train[10])
     print o.shape
     print o
