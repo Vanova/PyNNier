@@ -56,7 +56,8 @@ class RNNTheano:
         
         # SGD
         learning_rate = T.scalar('learning_rate')
-        self.sgd_step = theano.function([x,y,learning_rate], [], 
+        self.sgd_step \
+            = theano.function([x,y,learning_rate], [],
                       updates=[(self.U, self.U - learning_rate * dU),
                               (self.V, self.V - learning_rate * dV),
                               (self.W, self.W - learning_rate * dW)])
