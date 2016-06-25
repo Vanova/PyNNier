@@ -32,6 +32,7 @@ class RNNTheano:
             s_t = T.tanh(U[:,x_t] + W.dot(s_t_prev))
             o_t = T.nnet.softmax(V.dot(s_t))
             return [o_t[0], s_t]
+
         [o,s], updates = theano.scan(
             forward_prop_step,
             sequences=x,
