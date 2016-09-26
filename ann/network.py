@@ -60,7 +60,7 @@ class Network(object):
             mean_loss = 0.0
             for mini_batch in mini_batches:
                 mean_loss += self.update_mini_batch(mini_batch, eta)
-            mean_loss = mean_loss / len(mini_batch)
+            mean_loss = mean_loss / len(mini_batches)
             self.loss_tr_progress.append(mean_loss)
             if test_data:
                 err = self.evaluate(test_data)

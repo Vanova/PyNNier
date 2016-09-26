@@ -37,14 +37,14 @@ def plot_hyperplane(ax, clf, min_x, max_x, linestyle, label):
     ax.plot(xx, yy, linestyle, label=label)
 
 
-def plot_2d(ax, x, y):
+def plot_2d(figure_axes, x, y):
     # plot dots
     id_lbl = (y * [1, 2]).sum(axis=1)
     colors = COLORS.take(id_lbl)
     for c, m in zip(COLORS, MARKERS):
         xr = x[np.where(colors == c)]  # take class by color
         if len(xr):
-            ax.scatter(xr[:, 0], xr[:, 1], color=c, marker=m, edgecolor='black')
+            figure_axes.scatter(xr[:, 0], xr[:, 1], color=c, marker=m, edgecolor='black')
 
     # prepare hyperplanes
     min_x = np.min(x[:, 0])
@@ -52,26 +52,29 @@ def plot_2d(ax, x, y):
 
     classif = OneVsRestClassifier(SVC(kernel='linear'))
     classif.fit(x, y)
-    plot_hyperplane(ax, classif.estimators_[0], min_x, max_x, 'k--',
+    plot_hyperplane(figure_axes, classif.estimators_[0], min_x, max_x, 'k--',
                     'Boundary\nfor class 1')
-    plot_hyperplane(ax, classif.estimators_[1], min_x, max_x, 'k-.',
+    plot_hyperplane(figure_axes, classif.estimators_[1], min_x, max_x, 'k-.',
                     'Boundary\nfor class 2')
 
 
-def plot_3d(ax, x, y):
+def plot_3d(figure_axes, x, y):
     id_lbl = (y * [1, 2]).sum(axis=1)
     colors = COLORS.take(id_lbl)
     for c, m in zip(COLORS, MARKERS):
         xr = x[np.where(colors == c)]
         if len(xr):
-            ax.scatter(xr[:, 0], xr[:, 1], xr[:, 2], color=c, marker=m, edgecolor='b')
+            figure_axes.scatter(xr[:, 0], xr[:, 1], xr[:, 2], color=c, marker=m, edgecolor='b')
 
 
-def plot_toy(data_list, feature_dim):
+def plot_toy_data(data_list, titles, feature_dim):
+    # TODO feat dim 2D or 3D
+    # num_set = len(data_list)
+    # dim = data_list[0].shape(0)
     if feature_dim == 2:
-        fig, _ = plt.subplots(nrows=1, ncols=len(data_list), sharex='row', sharey='row', figsize=(10, 6))
+        fig, _ = plt.subplots(nrows=1, ncols=len(data_list), sharex='row', sharey='row', figsize=(15, 6))
         for i, ax in enumerate(fig.axes):
-            ax.set_title(SET_TITLES[i])
+            ax.set_title(titles[i])
             tr_x, tr_y = toy_loader.plot_format(data_list[i])
             plot_2d(ax, tr_x, tr_y)
         plt.show()
@@ -79,7 +82,7 @@ def plot_toy(data_list, feature_dim):
         fig = plt.figure(figsize=(12, 5))
         for i in xrange(len(data_list)):
             ax = fig.add_subplot(1, len(data_list), i + 1, projection='3d')
-            ax.set_title(SET_TITLES[i])
+            ax.set_title(titles[i])
             tr_x, tr_y = toy_loader.plot_format(data_list[i])
             plot_3d(ax, tr_x, tr_y)
         plt.show()
@@ -97,11 +100,10 @@ def data_stats(data):
     plt.boxplot(feats)
     plt.show()
 
-
     # def plot_in_out_surface():
 
 
-    #def plot_error_surface():
+    # def plot_error_surface():
     """Graph loss(W)"""
 
 
@@ -119,26 +121,27 @@ def data_stats(data):
 feature_dim = 2
 train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
                                                        n_features=feature_dim, n_classes=2)
-plot_toy([train_data, test_data, dev_data], feature_dim)
+plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
 # data_stats(train_data)
 
 # simple toy experiment
 # 1. MSE loss and Sigmoid outputs
-epochs = 10
-mini_batch = 250
-learn_rate = 1.0
-architecture = [feature_dim, 2]
-file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
-    format(epochs, mini_batch, learn_rate)
-net2 = network.Network(architecture)
-eval, loss = net2.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
-net2.save(file_net)
-net2 = network.load(file_net)
-#print("mF1 on test set: {0}".format(eval))
-#print("MSE loss: {0}".format(loss))
-#epochs = 100
-#net = mif_network.MifNetwork(architecture, alpha=5., beta=0)
-#eval, loss = net.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
+# epochs = 10
+# mini_batch = 250
+# learn_rate = 1.0
+# architecture = [feature_dim, 2]
+# file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
+#     format(epochs, mini_batch, learn_rate)
+# net2 = network.Network(architecture)
+# eval, loss = net2.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
+# net2.save(file_net)
+# net2 = network.load(file_net)
+
+# print("mF1 on test set: {0}".format(eval))
+# print("MSE loss: {0}".format(loss))
+# epochs = 100
+# net = mif_network.MifNetwork(architecture, alpha=5., beta=0)
+# eval, loss = net.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
 
 
 # # plot nnet curve surface

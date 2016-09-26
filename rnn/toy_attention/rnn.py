@@ -1,3 +1,7 @@
+"""
+This code is taken from blog: https://talbaumel.github.io/Neural+Attention+Mechanism.html
+"""
+
 from random import choice, randrange
 import matplotlib.pyplot as plt
 import pycnn as pc
