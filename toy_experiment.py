@@ -72,7 +72,8 @@ def plot_toy_data(data_list, titles, feature_dim):
     # num_set = len(data_list)
     # dim = data_list[0].shape(0)
     if feature_dim == 2:
-        fig, _ = plt.subplots(nrows=1, ncols=len(data_list), sharex='row', sharey='row', figsize=(15, 6))
+        fig, _ = plt.subplots(nrows=1, ncols=len(data_list),
+                              sharex='row', sharey='row', figsize=(15, 6))
         for i, ax in enumerate(fig.axes):
             ax.set_title(titles[i])
             tr_x, tr_y = toy_loader.plot_format(data_list[i])
@@ -100,11 +101,10 @@ def data_stats(data):
     plt.boxplot(feats)
     plt.show()
 
-    # def plot_in_out_surface():
 
+def plot_optimisation():
+    pass
 
-    # def plot_error_surface():
-    """Graph loss(W)"""
 
 
 # TODO:
@@ -124,7 +124,10 @@ train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst
 plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
 # data_stats(train_data)
 
-# simple toy experiment
+
+
+
+#### simple toy experiment
 # 1. MSE loss and Sigmoid outputs
 # epochs = 10
 # mini_batch = 250
