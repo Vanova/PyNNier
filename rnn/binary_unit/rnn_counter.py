@@ -1,7 +1,5 @@
-# Vanilla RNN for counting units in binary number
+# Vanilla RNN for counting units in a binary number
 import numpy as np
-# import rnn_plotter as rp
-# import matplotlib.pyplot as plt
 from utils.plotters import NetworkVisualiser
 
 np.random.seed(seed=1)

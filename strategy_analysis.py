@@ -59,8 +59,8 @@ def OneVsAllFunction(dim=3, fname=None):
         fig = plt.figure(figsize=(12, 5))
         ax = fig.add_subplot(2, 2, 1, projection='3d')
         ax.set_title("One vs all strategy: d_1", fontdict=titlefont)
-        surf = ax.plot_surface(S1, S2, dk1, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
-                               linewidth=0, antialiased=False)
+        surf = ax._plot_surface(S1, S2, dk1, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
+                                linewidth=0, antialiased=False)
         ax.set_xlabel('sigma_1', fontdict=labelfont)
         ax.set_ylabel('sigma_2', fontdict=labelfont)
         ax.set_zlabel('d_1', fontdict=labelfont)
@@ -70,8 +70,8 @@ def OneVsAllFunction(dim=3, fname=None):
 
         ax = fig.add_subplot(2, 2, 2, projection='3d')
         ax.set_title("One vs all strategy: d_2", fontdict=titlefont)
-        surf = ax.plot_surface(S1, S2, dk2, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
-                               linewidth=0, antialiased=False)
+        surf = ax._plot_surface(S1, S2, dk2, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
+                                linewidth=0, antialiased=False)
         ax.set_xlabel('sigma_1', fontdict=labelfont)
         ax.set_ylabel('sigma_2', fontdict=labelfont)
         ax.set_zlabel('d_2', fontdict=labelfont)
@@ -81,8 +81,8 @@ def OneVsAllFunction(dim=3, fname=None):
 
         ax = fig.add_subplot(2, 2, 3, projection='3d')
         ax.set_title("One vs all strategy: l_1", fontdict=titlefont)
-        surf = ax.plot_surface(S1, S2, l1, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
-                               linewidth=0, antialiased=False)
+        surf = ax._plot_surface(S1, S2, l1, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
+                                linewidth=0, antialiased=False)
         ax.set_xlabel('sigma_1', fontdict=labelfont)
         ax.set_ylabel('sigma_2', fontdict=labelfont)
         ax.set_zlabel('l_1', fontdict=labelfont)
@@ -92,8 +92,8 @@ def OneVsAllFunction(dim=3, fname=None):
 
         ax = fig.add_subplot(2, 2, 4, projection='3d')
         ax.set_title("One vs all strategy: l_2", fontdict=titlefont)
-        surf = ax.plot_surface(S1, S2, l2, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
-                               linewidth=0, antialiased=False)
+        surf = ax._plot_surface(S1, S2, l2, rstride=3, cstride=3, alpha=0.8, cmap=cm.coolwarm,
+                                linewidth=0, antialiased=False)
         ax.set_xlabel('sigma_1', fontdict=labelfont)
         ax.set_ylabel('sigma_2', fontdict=labelfont)
         ax.set_zlabel('l_2', fontdict=labelfont)
