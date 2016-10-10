@@ -156,14 +156,6 @@ nb_of_samples = 20
 sequence_len = 10
 data, labels = dataset(num_samples=nb_of_samples, seq_len=sequence_len)
 
-# # Plot cost surface and gradients
-# # Get and plot the cost surface figure with markers
-# fig = rp.get_cost_surface_figure(lambda w1, w2: cost(forward_states(data, w1, w2)[:, -1], labels), rp.points)
-# # Get the plots of the gradients changing by backpropagation.
-# rp.plot_gradient_over_time(rp.points, get_grad_over_time, data, labels)
-# # Show figures
-# plt.show()
-
 # TODO:
 # network = RNNBinaryCounter()
 # NetTrainer(network, method=NetTrainer.rprop, visualize=True)
@@ -171,10 +163,13 @@ data, labels = dataset(num_samples=nb_of_samples, seq_len=sequence_len)
 network = RNNBinaryCounter()
 gradient_check(data, labels, network)
 network = RNNBinaryCounter()
-# Rprop training
+# rprop training
 eta_p = 1.2
 eta_n = 0.5
+# TODO chage type: list of tuples to list of arrays
+# TODO lambda cost function
 list_of_ws = network.rprop_training(eta_p, eta_n)
-# plot the cost surface with the weights over the iterations
+# plot the network weight surface and optimization
 net_viz = NetworkVisualiser()
+net_viz.plot_cost_surface(network, data, labels)
 net_viz.plot_network_optimisation(network, list_of_ws, data, labels)
