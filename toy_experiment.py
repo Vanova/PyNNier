@@ -102,11 +102,6 @@ def data_stats(data):
     plt.show()
 
 
-def plot_optimisation():
-    pass
-
-
-
 # TODO:
 # - implement NN saving
 # 2. plot model weights
@@ -118,30 +113,28 @@ def plot_optimisation():
 # 4. simple architecture [2, 2] or [3, 3]
 # 5. make video of parameters optimisation
 
+# Plot data scatter distribution
 feature_dim = 2
 train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
                                                        n_features=feature_dim, n_classes=2)
 plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
 # data_stats(train_data)
-
-
-
-
-#### simple toy experiment
-# 1. MSE loss and Sigmoid outputs
-# epochs = 10
-# mini_batch = 250
-# learn_rate = 1.0
-# architecture = [feature_dim, 2]
+### simple toy experiment
+## 1.MSE loss and Sigmoid outputs
+epochs = 100
+mini_batch = 5
+learn_rate = 1.0
+architecture = [feature_dim, 5, 2]
 # file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
 #     format(epochs, mini_batch, learn_rate)
-# net2 = network.Network(architecture)
-# eval, loss = net2.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
+net2 = network.Network(architecture)
+eval, loss = net2.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
 # net2.save(file_net)
+print("mF1 on test set: {0}".format(eval[-1]))
+print("MSE loss: {0}".format(loss[-1]))
 # net2 = network.load(file_net)
 
-# print("mF1 on test set: {0}".format(eval))
-# print("MSE loss: {0}".format(loss))
+## 2.MFoM network with Sigmoid outputs
 # epochs = 100
 # net = mif_network.MifNetwork(architecture, alpha=5., beta=0)
 # eval, loss = net.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)

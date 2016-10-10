@@ -26,7 +26,7 @@ class NetworkVisualiser():
         fig = plt.figure(figsize=(5, 4))
 
         # plot overview of cost function
-        ax_1 = fig.add_subplot(1, 1, 1)
+        ax_1 = fig.add_subplot(1, 1, 1, projection='3d')
         ws1_1, ws2_1, cost_ws_1 = self._get_cost_surface(-3, 3, -3, 3, 100, network, data, labels)
         surf_1 = self._plot_surface(ax_1, ws1_1, ws2_1, cost_ws_1 + 1)
         ax_1.set_xlim([-3, 3])
@@ -48,7 +48,7 @@ class NetworkVisualiser():
         fig = plt.figure(figsize=(5, 4))
 
         # plot overview of cost function
-        ax_1 = fig.add_subplot(1, 1, 1)
+        ax_1 = fig.add_subplot(1, 1, 1, projection='3d')
         ws1_1, ws2_1, cost_ws_1 = self._get_cost_surface(-3, 3, -3, 3, 100, network, data, labels)
         surf_1 = self._plot_surface(ax_1, ws1_1, ws2_1, cost_ws_1 + 1)
         ax_1.plot(ws1, ws2, 'b.')
@@ -102,7 +102,10 @@ class NetworkVisualiser():
 
     def _plot_surface(self, ax, ws1, ws2, cost_ws):
         """Plot the cost in function of the weights."""
-        surf = ax.contourf(ws1, ws2, cost_ws, levels=np.logspace(-0.2, 8, 30), cmap=cm.pink, norm=LogNorm())
+        # surf = ax.contourf(ws1, ws2, cost_ws, levels=np.logspace(-0.2, 8, 30), cmap=cm.pink, norm=LogNorm())
+        surf = ax.plot_surface(ws1, ws2, cost_ws, rstride=1, norm=LogNorm(),
+                               cstride=1, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+
         ax.set_xlabel('$w_{in}$', fontsize=15)
         ax.set_ylabel('$w_{rec}$', fontsize=15)
         return surf
