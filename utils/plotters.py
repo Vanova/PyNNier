@@ -22,7 +22,7 @@ class NetworkVisualiser():
 
     def plot_neurons_cost_surface(self, network, data):
         layer = 2
-        neuron = 2
+        neuron = 1
         id_layer = layer - 2
         id_neuron = neuron - 1
         x, y = zip(*data)
@@ -124,8 +124,8 @@ class NetworkVisualiser():
             for j in range(nb_of_ws):
                 network.weights[layer][neuron] = np.array([ws1[i, j], ws2[i, j]])
                 # TODO vectorize the network
-                # cost_ws[i, j] = network.cost_value(network.feedforward(data), labels)
-                costs = [network.cost_value(network.feedforward(x), y) for x, y in zip(data, labels)]
+                cost_ws[i, j] = network.cost_value(network.feedforward(data), labels)
+                # costs = [network.cost_value(network.feedforward(x), y) for x, y in zip(data, labels)]
                 cost_ws[i, j] = np.mean(costs)
         return ws1, ws2, cost_ws
 
