@@ -107,23 +107,23 @@ def data_stats(data):
 # 2.2. Plot value of d_k based on the outputs of sigma
 # + plot toy 2D data: plot_toy
 # + plot toy 3D data: plot_toy
-# 3. plot loss surface
-# 4. simple architecture [2, 2] or [3, 3]
+# + plot loss surface
+# + simple architecture [2, 2] or [3, 3]
 # 5. make video of parameters optimisation
 
 # Plot data scatter distribution
 feature_dim = 2
 # train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
 #                                                        n_features=feature_dim, n_classes=2)
-train_data, dev_data, test_data = toy_loader.load_data(n_tr=5, n_dev=2, n_tst=2,
+train_data, dev_data, test_data = toy_loader.load_data(n_tr=25, n_dev=5, n_tst=5,
                                                        n_features=feature_dim, n_classes=2)
 # plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
-data_stats(train_data)
+# data_stats(train_data)
 #####
-# simple toy experiment
+# Simple toy experiment
 # 1.MSE loss and Sigmoid outputs
 #####
-epochs = 100
+epochs = 10
 mini_batch = 5
 learn_rate = 1.0
 architecture = [feature_dim, 2]

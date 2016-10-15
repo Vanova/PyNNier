@@ -35,8 +35,9 @@ class Network(object):
 
     def feedforward(self, a):
         """
-        Input: single sample vector
-        Return the output of the network if ``a`` is input."""
+        Input: 2D array, N samples x Dimension
+        Return the output of the network if ``a`` is input.
+        """
         for b, w in zip(self.biases, self.weights):
             a = cf.sigmoid(np.dot(w, a) + b)
         return a
