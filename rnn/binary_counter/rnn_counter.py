@@ -87,7 +87,7 @@ class RNNBinaryCounter():
             # Update each weight parameter separately
             for i, _ in enumerate(self.W):
                 self.W[i] -= W_sign[i] * W_delta[i]
-            list_ws.append((self.W[0], self.W[1]))  # Add weights to list to plot
+            list_ws.append([self.W[0], self.W[1]])  # Add weights to list to plot
         print('Final weights are: wx = {0},  wRec = {1}'.format(self.W[0], self.W[1]))
         return list_ws
 
@@ -150,16 +150,15 @@ def gradient_check(X, Y, net):
                     float(grad_num), float(grad_backprop)))
     print('No gradient errors found')
 
+# TODO: create model
+# network = RNNBinaryCounter()
+# NetTrainer(network, method=NetTrainer.rprop, visualize=True)
 
 # create dataset
 nb_of_samples = 20
 sequence_len = 10
 data, labels = dataset(num_samples=nb_of_samples, seq_len=sequence_len)
-
-# TODO:
-# network = RNNBinaryCounter()
-# NetTrainer(network, method=NetTrainer.rprop, visualize=True)
-
+# create network
 network = RNNBinaryCounter()
 gradient_check(data, labels, network)
 network = RNNBinaryCounter()

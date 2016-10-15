@@ -12,38 +12,35 @@ def load_data(n_tr=250, n_dev=50, n_tst=50, n_features=2, n_classes=2):
                                                       allow_unlabeled=False,
                                                       return_distributions=True,
                                                       random_state=RANDOM_SEED)
-    data = nnet_format(zip(x, y))
+    data = nnet_format(x, y)
     # split data
     tr = data[:n_tr]
     tst = data[n_tr:n_tr + n_tst]
     dev = data[n_tr + n_tst:]
-    return (tr, dev, tst)
+    return tr, dev, tst
 
 
-def nnet_format(data):
-    """Input: list of tuples (x, y), x and y arrays.
-    Return list of tuples with columns arrays"""
-    xn = data[0][0].size
-    yn = data[0][1].size
-    return [(x.reshape((xn, 1)), y.reshape((yn, 1))) for x, y in data]
+def nnet_format(x, y):
+    """Input: 2D arrays x and y.
+    Return list of tuples with columns arrays [dim, 1]"""
+    return [(x.reshape((-1, 1)), y.reshape((-1, 1))) for x, y in zip(x, y)]
 
 
 def plot_format(data):
-    """Return lists xs, ys with row arrays"""
+    """
+    Input: list of tuples of arrays
+    Return 2D arrays xs, ys """
     xs = []
     ys = []
     for x, y in data:
-        it = x.T.tolist()
-        xs.append(it[0])
-        it = y.T.tolist()
-        ys.append(it[0])
-    return (np.array(xs), np.array(ys))
+        xs.append(x.flatten())
+        ys.append(y.flatten())
+    return np.array(xs), np.array(ys)
 
 
 def plot_format_no_ticks(data):
     """Return lists xs, ys with row arrays"""
     xs = []
     for x in data:
-        it = x.T.tolist()
-        xs.append(it[0])
+        xs.append(x.flatten())
     return np.array(xs)

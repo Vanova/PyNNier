@@ -1,11 +1,9 @@
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import SVC
-import numpy as np
 from utils import toy_loader
+from utils.plotters import NetworkVisualiser
 from ann import network
 from ann import mif_network
 
@@ -103,35 +101,47 @@ def data_stats(data):
 
 
 # TODO:
-# - implement NN saving
+# + implement NN saving
 # 2. plot model weights
 # 2.1. plot data before and after classification
 # 2.2. Plot value of d_k based on the outputs of sigma
-# - plot toy 2D data: plot_toy
-# - plot toy 3D data: plot_toy
+# + plot toy 2D data: plot_toy
+# + plot toy 3D data: plot_toy
 # 3. plot loss surface
 # 4. simple architecture [2, 2] or [3, 3]
 # 5. make video of parameters optimisation
 
 # Plot data scatter distribution
 feature_dim = 2
-train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
+# train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
+#                                                        n_features=feature_dim, n_classes=2)
+train_data, dev_data, test_data = toy_loader.load_data(n_tr=5, n_dev=2, n_tst=2,
                                                        n_features=feature_dim, n_classes=2)
-plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
-# data_stats(train_data)
-### simple toy experiment
-## 1.MSE loss and Sigmoid outputs
+# plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
+data_stats(train_data)
+#####
+# simple toy experiment
+# 1.MSE loss and Sigmoid outputs
+#####
 epochs = 100
 mini_batch = 5
 learn_rate = 1.0
-architecture = [feature_dim, 5, 2]
-# file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
-#     format(epochs, mini_batch, learn_rate)
-net2 = network.Network(architecture)
-eval, loss = net2.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
-# net2.save(file_net)
+architecture = [feature_dim, 2]
+network = network.Network(architecture)
+eval, loss, list_ws = network.SGD(train_data, epochs, mini_batch, learn_rate,
+                                  test_data=test_data, is_list_weights=True)
 print("mF1 on test set: {0}".format(eval[-1]))
 print("MSE loss: {0}".format(loss[-1]))
+print("Network optimal weights:")
+print(network.weights)
+# visualize the network weights
+net_viz = NetworkVisualiser()
+net_viz.plot_neurons_cost_surface(network, train_data)
+
+
+# file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
+#     format(epochs, mini_batch, learn_rate)
+# net2.save(file_net)
 # net2 = network.load(file_net)
 
 ## 2.MFoM network with Sigmoid outputs

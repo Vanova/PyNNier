@@ -34,14 +34,16 @@ class Network(object):
 
 
     def feedforward(self, a):
-        """Return the output of the network if ``a`` is input."""
+        """
+        Input: single sample vector
+        Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
             a = cf.sigmoid(np.dot(w, a) + b)
         return a
 
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
-            test_data=None):
+            test_data=None, is_list_weights=False):
         """Train the neural network using mini-batch stochastic
         gradient descent.  The ``training_data`` is a list of tuples
         ``(x, y)`` representing the training inputs and the desired
@@ -52,6 +54,7 @@ class Network(object):
         tracking progress, but slows things down substantially."""
         if test_data: n_test = len(test_data)
         n = len(training_data)
+        list_weights = []
         for j in xrange(epochs):
             random.shuffle(training_data)
             mini_batches = [
@@ -60,8 +63,11 @@ class Network(object):
             mean_loss = 0.0
             for mini_batch in mini_batches:
                 mean_loss += self.update_mini_batch(mini_batch, eta)
+                if is_list_weights:
+                    list_weights.append(self.weights)
             mean_loss = mean_loss / len(mini_batches)
             self.loss_tr_progress.append(mean_loss)
+
             if test_data:
                 err = self.evaluate(test_data)
                 true_pos = self.correct_count(test_data)
@@ -72,7 +78,7 @@ class Network(object):
                       format(j, err, mean_loss))
             else:
                 print("Epoch {0} complete, loss = {1}".format(j, mean_loss))
-        return (self.eval_err_progress, self.loss_tr_progress)
+        return (self.eval_err_progress, self.loss_tr_progress, list_weights)
 
 
     def update_mini_batch(self, mini_batch, eta):
