@@ -136,7 +136,7 @@ print("Network optimal weights:")
 print(network.weights)
 # visualize the network weights
 net_viz = NetworkVisualiser()
-net_viz.plot_neurons_cost_surface(network, train_data, "MSE")
+net_viz.plot_neurons_cost_surface(network, train_data, title="The MSE error surface")
 
 
 # file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \

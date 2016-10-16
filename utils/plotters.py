@@ -6,8 +6,15 @@ import matplotlib.pyplot as plt
 import toy_loader
 
 
-def show_line(x, y):
-    plt.plot(x, y)
+def show_curve(y, labels, title):
+    """
+    Plot curve, starting from x = 0
+    """
+    plt.plot(y, 'b-')
+    plt.xlabel(labels[0], fontsize=15)
+    plt.ylabel(labels[1], fontsize=15)
+    plt.title(title)
+    plt.grid()
     plt.show()
 
 
@@ -20,7 +27,7 @@ class NetworkVisualiser():
     # Define points to annotate (wx, wRec, color)
     data_points = [(2, 1, 'r'), (1, 2, 'b'), (1, -2, 'g'), (1, 0, 'c'), (1, 0.5, 'm'), (1, -0.5, 'y')]
 
-    def plot_neurons_cost_surface(self, network, data, fun_name="$E$"):
+    def plot_neurons_cost_surface(self, network, data, fun_name="$E$", title="Cost function surface"):
         # Data vectorisation
         x, y = map(list, zip(*data))
         xvec = np.array([s.flatten() for s in x]).T
@@ -33,13 +40,12 @@ class NetworkVisualiser():
             ax = fig.add_subplot(2, neurons, i + 1, projection='3d')
             ws1, ws2, cost_ws = self._cost_surface_grid(-3, 3, -3, 3, 100, network, xvec, yvec, id_layer, i)
             labs = ["$w_{%d1}$" % (i + 1), "$w_{%d2}$" % (i + 1), fun_name]
-            self._plot_surface(ax, ws1, ws2, cost_ws, labs)
-            ax.set_xlim([-3, 3])
-            ax.set_ylim([-3, 3])
+            self._surface_view(ax, ws1, ws2, cost_ws, labs)
             # surface projection
             ax = fig.add_subplot(2, neurons, (i + 1) + neurons)
-            cntr = self._plot_contour(ax, ws1, ws2, cost_ws, labs)
+            cntr = self._contour_view(ax, ws1, ws2, cost_ws, labs)
             fig.colorbar(cntr, ticks=np.linspace(0, 1, 9))
+        plt.suptitle(title, fontsize=15)
         plt.show()
         # TODO 3D weights case
 
@@ -49,40 +55,18 @@ class NetworkVisualiser():
         """
         pass
 
-    # def plot_cost_surface(self, network, data, labels):
-    #     fig = plt.figure(figsize=(5, 4))
-    #
-    #     # plot overview of cost function
-    #     ax_1 = fig.add_subplot(1, 1, 1, projection='3d')
-    #     ws1_1, ws2_1, cost_ws_1 = self._cost_surface_grid(-3, 3, -3, 3, 100, network, data, labels)
-    #     surf_1 = self._plot_surface(ax_1, ws1_1, ws2_1, cost_ws_1 + 1)
-    #     ax_1.set_xlim([-3, 3])
-    #     ax_1.set_ylim([-3, 3])
-    #
-    #     # Show the colorbar
-    #     fig.subplots_adjust(right=0.8)
-    #     cax = fig.add_axes([0.85, 0.12, 0.03, 0.78])
-    #     cbar = fig.colorbar(surf_1, ticks=np.logspace(0, 8, 9), cax=cax)
-    #     cbar.ax.set_ylabel('$\\xi$', fontsize=15)
-    #     cbar.set_ticklabels(['{:.0e}'.format(i) for i in np.logspace(0, 8, 9)])
-    #     plt.suptitle('Cost surface', fontsize=15)
-    #     plt.show()
-
     def plot_network_optimisation(self, network, list_of_ws, data, labels):
         """Plot the optimisation iterations on the cost surface."""
         ws1, ws2 = zip(*list_of_ws)
-
         # plot figures
         fig = plt.figure(figsize=(5, 4))
-
         # plot overview of cost function
         ax_1 = fig.add_subplot(1, 1, 1, projection='3d')
         ws1_1, ws2_1, cost_ws_1 = self._cost_surface_grid(-3, 3, -3, 3, 100, network, data, labels)
-        surf_1 = self._plot_surface(ax_1, ws1_1, ws2_1, cost_ws_1 + 1)
+        surf_1 = self._surface_view(ax_1, ws1_1, ws2_1, cost_ws_1 + 1)
         ax_1.plot(ws1, ws2, 'b.')
         ax_1.set_xlim([-3, 3])
         ax_1.set_ylim([-3, 3])
-
         # Show the colorbar
         fig.subplots_adjust(right=0.8)
         cax = fig.add_axes([0.85, 0.12, 0.03, 0.78])
@@ -141,16 +125,19 @@ class NetworkVisualiser():
     #             cost_ws[i, j] = network.cost_value(network.feedforward(data)[:, -1], labels)
     #     return ws1, ws2, cost_ws
 
-    def _plot_surface(self, ax, ws1, ws2, cost_ws, labels):
+    def _surface_view(self, ax, ws1, ws2, cost_ws, labels):
         """Plot the cost in function of the weights."""
         surf = ax.plot_surface(ws1, ws2, cost_ws,
-                               rstride=1, cstride=1, linewidth=0, alpha=1, cmap=cm.coolwarm, antialiased=False)
+                               rstride=1, cstride=1, linewidth=0,
+                               alpha=1, cmap=cm.coolwarm, antialiased=False)
         ax.set_xlabel(labels[0], fontsize=15)
         ax.set_ylabel(labels[1], fontsize=15)
         ax.set_zlabel(labels[2], fontsize=15)
+        ax.set_xlim([-3, 3])
+        ax.set_ylim([-3, 3])
         return surf
 
-    def _plot_contour(self, ax, ws1, ws2, cost_ws, labels):
+    def _contour_view(self, ax, ws1, ws2, cost_ws, labels):
         surf = ax.contourf(ws1, ws2, cost_ws, cmap=cm.coolwarm)
         ax.set_xlabel(labels[0], fontsize=15)
         ax.set_ylabel(labels[1], fontsize=15)
