@@ -11,6 +11,7 @@ from sklearn.metrics import mean_squared_error
 from functions import metrics
 import cost_functions as cf
 
+
 class Network(object):
     def __init__(self, sizes, ):
         """
@@ -26,22 +27,26 @@ class Network(object):
         self.eval_err_progress = []
         self.loss_tr_progress = []
 
-
     def default_weight_initializer(self):
         self.biases = [np.random.randn(y, 1) for y in self.sizes[1:]]
         self.weights = [np.random.randn(y, x) / np.sqrt(x)
                         for x, y in zip(self.sizes[:-1], self.sizes[1:])]
 
-
     def feedforward(self, a):
         """
-        Input: 2D array, N samples x Dimension
+        Input: data 2D array, N samples x Dimension
         Return the output of the network if ``a`` is input.
         """
         for b, w in zip(self.biases, self.weights):
             a = cf.sigmoid(np.dot(w, a) + b)
         return a
 
+    def propagate(self):
+        """Forward the data array trough the network.
+        Input: data 2D array, N samples x Dimension
+        Output the activations only from the last layer.
+        """
+        pass
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
             test_data=None, is_list_weights=False):
@@ -81,7 +86,6 @@ class Network(object):
                 print("Epoch {0} complete, loss = {1}".format(j, mean_loss))
         return (self.eval_err_progress, self.loss_tr_progress, list_weights)
 
-
     def update_mini_batch(self, mini_batch, eta):
         """Update the network's weights and biases by applying
         gradient descent using backpropagation to a single mini batch.
@@ -100,7 +104,6 @@ class Network(object):
         self.biases = [b - (eta / len(mini_batch)) * nb
                        for b, nb in zip(self.biases, nabla_b)]
         return batch_loss / len(mini_batch)
-
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
@@ -137,7 +140,6 @@ class Network(object):
             nabla_w[-l] = np.dot(delta, activations[-l - 1].transpose())
         return (nabla_b, nabla_w, loss)
 
-
     def correct_count(self, test_data):
         """Return the number of test inputs for which the neural
         network outputs the correct result. Note that the neural
@@ -145,9 +147,8 @@ class Network(object):
         neuron in the final layer has the highest activation."""
         # count number of right answers
         test_results = [(np.argmax(self.feedforward(x)), np.argmax(y))
-                       for (x, y) in test_data]
+                        for (x, y) in test_data]
         return sum(int(x == y) for (x, y) in test_results)
-
 
     def evaluate(self, test_data):
         """Return micro F1 error on test data"""
@@ -160,18 +161,15 @@ class Network(object):
             refs.append(y)
         return metrics.micro_f1(refs=refs, predicts=predicts, accuracy=False)
 
-
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /
         \partial a for the output activations."""
         return (output_activations - y)
 
-
     def cost_value(self, output_activations, y):
         """Return the MSE loss function value between
          the network output and target label y."""
         return mean_squared_error(y_true=y, y_pred=output_activations)
-
 
     def save(self, filename):
         """Save the neural network to the file ``filename``."""
@@ -196,6 +194,7 @@ def load(filename):
     net.biases = [np.array(b) for b in data["biases"]]
     return net
 
+
 if __name__ == '__main__':
     import time
     from utils import mnist_loader
@@ -206,7 +205,7 @@ if __name__ == '__main__':
     mini_batch = 10
     learn_rate = 3.0
     net = Network([784, 30, 10])
-    file_net = "./data/experiment/nist/nist_epo_{0}_btch_{1}_lr_{2}".\
+    file_net = "./data/experiment/nist/nist_epo_{0}_btch_{1}_lr_{2}". \
         format(epochs, mini_batch, learn_rate)
     # training
     start_time = time.time()

@@ -115,7 +115,7 @@ def data_stats(data):
 feature_dim = 2
 # train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
 #                                                        n_features=feature_dim, n_classes=2)
-train_data, dev_data, test_data = toy_loader.load_data(n_tr=25, n_dev=5, n_tst=5,
+train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
                                                        n_features=feature_dim, n_classes=2)
 # plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
 # data_stats(train_data)
@@ -136,7 +136,7 @@ print("Network optimal weights:")
 print(network.weights)
 # visualize the network weights
 net_viz = NetworkVisualiser()
-net_viz.plot_neurons_cost_surface(network, train_data)
+net_viz.plot_neurons_cost_surface(network, train_data, "MSE")
 
 
 # file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
