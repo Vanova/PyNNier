@@ -38,8 +38,8 @@ class NetworkVisualiser():
             ax.set_ylim([-3, 3])
             # surface projection
             ax = fig.add_subplot(2, neurons, (i + 1) + neurons)
-            self._plot_contour(ax, ws1, ws2, cost_ws, labs)
-
+            cntr = self._plot_contour(ax, ws1, ws2, cost_ws, labs)
+            fig.colorbar(cntr, ticks=np.linspace(0, 1, 9))
         plt.show()
         # TODO 3D weights case
 
