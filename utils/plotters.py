@@ -3,6 +3,7 @@ from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 from matplotlib import cm
 import matplotlib.pyplot as plt
+from matplotlib.colors import colorConverter, ListedColormap
 import toy_loader
 
 
@@ -49,11 +50,41 @@ class NetworkVisualiser():
         plt.show()
         # TODO 3D weights case
 
-    def plot_decision_boundaries(self, network, data, fun_name="$E$"):
+    def plot_decision_boundaries(self, network, data, fun_name="$E$", title="Network decision boundary"):
         """
-        Plot decisions of every neuron
+        Plot decision boundary of every neuron
         """
-        pass
+        id_neuron = 0
+        nb_of_xs = 100
+        xs1 = np.linspace(-3, 3, num=nb_of_xs)
+        xs2 = np.linspace(-3, 3, num=nb_of_xs)
+        xx, yy = np.meshgrid(xs1, xs2)  # create the grid
+        # Initialize and fill the classification plane
+        classification_plane = np.zeros((nb_of_xs, nb_of_xs))
+        # TODO vectorise (xx,yy)
+        for i in range(nb_of_xs):
+            for j in range(nb_of_xs):
+                pred = network.feedforward(np.asarray([[xx[i, j]], [yy[i, j]]]))
+                # TODO plot for one neuron
+                classification_plane[i, j] = pred[id_neuron, 0]
+        # Create a color map to show the classification colors of each grid point
+        # cmap = ListedColormap([
+        #     colorConverter.to_rgba('b', alpha=0.30),
+        #     colorConverter.to_rgba('r', alpha=0.30)])
+
+        # Plot the classification plane with decision boundary and input samples
+        plt.contourf(xx, yy, classification_plane, cmap=cm.coolwarm)
+        # Plot both classes on the x1, x2 plane
+        # TODO plot data scatter
+        # plt.plot(x_red[:, 0], x_red[:, 1], 'ro', label='class red')
+        # plt.plot(x_blue[:, 0], x_blue[:, 1], 'bo', label='class blue')
+        # plt.grid()
+        # plt.legend(loc=1)
+        # plt.xlabel('$x_1$', fontsize=15)
+        # plt.ylabel('$x_2$', fontsize=15)
+        # plt.axis([-1.5, 1.5, -1.5, 1.5])
+        plt.title(title)
+        plt.show()
 
     def plot_network_optimisation(self, network, list_of_ws, data, labels):
         """Plot the optimisation iterations on the cost surface."""
@@ -141,4 +172,5 @@ class NetworkVisualiser():
         surf = ax.contourf(ws1, ws2, cost_ws, cmap=cm.coolwarm)
         ax.set_xlabel(labels[0], fontsize=15)
         ax.set_ylabel(labels[1], fontsize=15)
+        ax.grid()
         return surf

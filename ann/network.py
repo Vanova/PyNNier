@@ -34,8 +34,9 @@ class Network(object):
 
     def feedforward(self, a):
         """
-        Input: data 2D array, N samples x Dimension
-        Return the output of the network if ``a`` is input.
+        Input: data 2D array,  Dimension x N samples
+        Return the output of the network (2D array),
+        forward data through all layers.
         """
         for b, w in zip(self.biases, self.weights):
             a = cf.sigmoid(np.dot(w, a) + b)

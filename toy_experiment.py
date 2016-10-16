@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import SVC
 from utils import toy_loader
+from sklearn import preprocessing
 from utils.plotters import NetworkVisualiser
 from ann import network
 from ann import mif_network
@@ -45,15 +46,15 @@ def plot_2d(figure_axes, x, y):
             figure_axes.scatter(xr[:, 0], xr[:, 1], color=c, marker=m, edgecolor='black')
 
     # prepare hyperplanes
-    min_x = np.min(x[:, 0])
-    max_x = np.max(x[:, 0])
-
-    classif = OneVsRestClassifier(SVC(kernel='linear'))
-    classif.fit(x, y)
-    plot_hyperplane(figure_axes, classif.estimators_[0], min_x, max_x, 'k--',
-                    'Boundary\nfor class 1')
-    plot_hyperplane(figure_axes, classif.estimators_[1], min_x, max_x, 'k-.',
-                    'Boundary\nfor class 2')
+    # min_x = np.min(x[:, 0])
+    # max_x = np.max(x[:, 0])
+    #
+    # classif = OneVsRestClassifier(SVC(kernel='linear'))
+    # classif.fit(x, y)
+    # plot_hyperplane(figure_axes, classif.estimators_[0], min_x, max_x, 'k--',
+    #                 'Boundary\nfor class 1')
+    # plot_hyperplane(figure_axes, classif.estimators_[1], min_x, max_x, 'k-.',
+    #                 'Boundary\nfor class 2')
 
 
 def plot_3d(figure_axes, x, y):
@@ -116,27 +117,34 @@ feature_dim = 2
 # train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
 #                                                        n_features=feature_dim, n_classes=2)
 train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
-                                                       n_features=feature_dim, n_classes=2)
-# plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
-# data_stats(train_data)
+                                                       n_features=feature_dim, n_classes=2,
+                                                       scaler=preprocessing.StandardScaler())
+plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
+data_stats(train_data)
 #####
 # Simple toy experiment
 # 1.MSE loss and Sigmoid outputs
 #####
-epochs = 10
-mini_batch = 5
-learn_rate = 1.0
+epochs = 100
+mini_batch = 10
+learn_rate = 0.1
 architecture = [feature_dim, 2]
 network = network.Network(architecture)
 eval, loss, list_ws = network.SGD(train_data, epochs, mini_batch, learn_rate,
                                   test_data=test_data, is_list_weights=True)
+best_weights = network.weights
 print("mF1 on test set: {0}".format(eval[-1]))
 print("MSE loss: {0}".format(loss[-1]))
 print("Network optimal weights:")
-print(network.weights)
+print(best_weights)
+#####
 # visualize the network weights
+#####
 net_viz = NetworkVisualiser()
 net_viz.plot_neurons_cost_surface(network, train_data, title="The MSE error surface")
+# visualize decision boundary
+network.weights = best_weights
+net_viz.plot_decision_boundaries(network, train_data, title="The MSE error surface")
 
 
 # file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
