@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from functions import metrics
 import cost_functions as cf
-
+import copy
 
 class Network(object):
     def __init__(self, sizes, ):
@@ -70,10 +70,10 @@ class Network(object):
             mean_loss = 0.0
             for mini_batch in mini_batches:
                 mean_loss += self.update_mini_batch(mini_batch, eta)
-                if is_list_weights:
-                    list_weights.append(self.weights)
             mean_loss = mean_loss / len(mini_batches)
             self.loss_tr_progress.append(mean_loss)
+            if is_list_weights:
+                list_weights.append(copy.deepcopy(self.weights))
 
             if test_data:
                 err = self.evaluate(test_data)
@@ -85,7 +85,7 @@ class Network(object):
                       format(j, err, mean_loss))
             else:
                 print("Epoch {0} complete, loss = {1}".format(j, mean_loss))
-        return (self.eval_err_progress, self.loss_tr_progress, list_weights)
+        return self.eval_err_progress, self.loss_tr_progress, list_weights
 
     def update_mini_batch(self, mini_batch, eta):
         """Update the network's weights and biases by applying
