@@ -1,6 +1,6 @@
 """
 ~~~~~~~~~~~~~~
-Based on Michael Nielsen
+Based on Michael Nielsen: Network2.py
 """
 
 import json
@@ -9,9 +9,13 @@ import sys
 import numpy as np
 import cost_functions as cf
 
+np.random.seed(777)
+# random.seed(777)
+
+
 #### Main Network class
-class Network(object):
-    def __init__(self, sizes, cost=cf.CrossEntropyCost):
+class MatrixNetwork(object):
+    def __init__(self, sizes, cost=cf.QuadraticCost):
         """
         :param sizes: list contains the number of neurons in the respective
         layers of the network, e.g. [2, 3, 1].
@@ -23,8 +27,10 @@ class Network(object):
         self.cost = cost
 
     def default_weight_initializer(self):
-        self.biases = [np.random.randn(y, 1) for y in self.sizes[1:]]
-        self.weights = [np.random.randn(y, x) / np.sqrt(x)
+        # rows = #_of_samples, columns = dim
+        self.biases = [np.random.randn(1, y) for y in self.sizes[1:]]
+        # rows = input_dim, columns = output_dim
+        self.weights = [np.random.randn(x, y) / np.sqrt(x)
                         for x, y in zip(self.sizes[:-1], self.sizes[1:])]
 
     def large_weight_initializer(self):
@@ -37,7 +43,7 @@ class Network(object):
         :return: the output of the network
         """
         for b, w in zip(self.biases, self.weights):
-            a = cf.sigmoid(np.dot(w, a) + b)
+            a = cf.sigmoid(np.dot(a, w) + b)
         return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -66,12 +72,10 @@ class Network(object):
         training_cost, training_accuracy = [], []
         for j in xrange(epochs):
             random.shuffle(training_data)
-            mini_batches = [
-                training_data[k:k + mini_batch_size]
-                for k in xrange(0, n, mini_batch_size)]
-            for mini_batch in mini_batches:
+            data_batches, label_batches = create_minibatches(training_data, mini_batch_size)
+            for X, Y in zip(data_batches, label_batches):
                 self.update_mini_batch(
-                    mini_batch, eta, lmbda, len(training_data))
+                    X, Y, eta, lmbda, len(training_data))
             print "Epoch %s training complete" % j
             # monitoring
             if monitor_training_cost:
@@ -79,62 +83,61 @@ class Network(object):
                 training_cost.append(cost)
                 print "Cost on training data: {}".format(cost)
             if monitor_training_accuracy:
-                accuracy = self.accuracy(training_data, convert=True)
+                accuracy = self.accuracy(training_data, convert=False)
                 training_accuracy.append(accuracy)
                 print "Accuracy on training data: {} / {}".format(
                     accuracy, n)
             if monitor_evaluation_cost:
-                cost = self.total_cost(evaluation_data, lmbda, convert=True)
+                cost = self.total_cost(evaluation_data, lmbda, convert=False)
                 evaluation_cost.append(cost)
                 print "Cost on evaluation data: {}".format(cost)
             if monitor_evaluation_accuracy:
-                accuracy = self.accuracy(evaluation_data)
+                accuracy = self.accuracy(evaluation_data, convert=True)
                 evaluation_accuracy.append(accuracy)
                 print "Accuracy on evaluation data: {} / {}".format(
-                    self.accuracy(evaluation_data), n_data)
+                    self.accuracy(evaluation_data, convert=True), n_data)
             print
         return evaluation_cost, evaluation_accuracy, \
                training_cost, training_accuracy
 
-    def update_mini_batch(self, mini_batch, eta, lmbda, n):
+    def update_mini_batch(self, data, labs, eta, lmbda, n):
         """Update the network's weights and biases by applying gradient
         descent using backpropagation to a single mini batch.  The
-        ``mini_batch`` is a list of tuples ``(x, y)``, ``eta`` is the
+        ``data and labs`` are two arrayes, ``eta`` is the
         learning rate, ``lmbda`` is the regularization parameter, and
         ``n`` is the total size of the training data set.
 
         """
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
-        for x, y in mini_batch:
-            delta_nabla_b, delta_nabla_w = self.backprop(x, y)
-            nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
-            nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [(1 - eta * (lmbda / n)) * w - (eta / len(mini_batch)) * nw
-                        for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b - (eta / len(mini_batch)) * nb
+        nabla_b, nabla_w = self.backprop(data, labs)
+        self.biases = [b - eta * nb
                        for b, nb in zip(self.biases, nabla_b)]
+        self.weights = [(1 - eta * (lmbda / n)) * w - eta * nw
+                        for w, nw in zip(self.weights, nabla_w)]
 
     def backprop(self, x, y):
-        """Return a tuple ``(nabla_b, nabla_w)`` representing the
+        """ Input: x, y - matrices (batch_size, dim1)
+        Return a tuple ``(nabla_b, nabla_w)`` representing the
         gradient for the cost function C_x.  ``nabla_b`` and
         ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
         to ``self.biases`` and ``self.weights``."""
-        nabla_b = [np.zeros(b.shape) for b in self.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.weights]
         # feedforward
         activation = x
         activations = [x]  # list to store all the activations, layer by layer
         zs = []  # list to store all the z vectors, layer by layer
         for b, w in zip(self.biases, self.weights):
-            z = np.dot(w, activation) + b
+            z = np.dot(x, w) + b
             zs.append(z)
             activation = cf.sigmoid(z)
             activations.append(activation)
         # backward pass
+        mini_batch_size = x.shape[0]
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+
         delta = (self.cost).delta(zs[-1], activations[-1], y)
+        # TODO fix here
         nabla_b[-1] = delta
-        nabla_w[-1] = np.dot(delta, activations[-2].transpose())
+        nabla_w[-1] = np.dot(activations[-2].transpose(), delta)
         # Note that the variable l in the loop below is used a little
         # differently to the notation in Chapter 2 of the book.  Here,
         # l = 1 means the last layer of neurons, l = 2 is the
@@ -147,7 +150,9 @@ class Network(object):
             delta = np.dot(self.weights[-l + 1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l - 1].transpose())
-        return (nabla_b, nabla_w)
+        avg_nabla_b = [np.mean(nb, axis=0) for nb in nabla_b]
+        avg_nabla_w = [nw/mini_batch_size for nw in nabla_w]
+        return avg_nabla_b, avg_nabla_w
 
     def accuracy(self, data, convert=False):
         """Return the number of inputs in ``data`` for which the neural
@@ -170,10 +175,9 @@ class Network(object):
         representations speeds things up.  More details on the
         representations can be found in
         mnist_loader.load_data_wrapper.
-
         """
         if convert:
-            results = [(np.argmax(self.feedforward(x)), np.argmax(y))
+            results = [(np.argmax(self.feedforward(x.transpose())), np.argmax(y.transpose()))
                        for (x, y) in data]
         else:
             results = [(np.argmax(self.feedforward(x)), y)
@@ -189,6 +193,8 @@ class Network(object):
         """
         cost = 0.0
         for x, y in data:
+            x = x.transpose()
+            y = y.transpose()
             a = self.feedforward(x)
             if convert: y = vectorized_result(y)
             cost += self.cost.fn(a, y) / len(data)
@@ -217,7 +223,7 @@ def load(filename):
     data = json.load(f)
     f.close()
     cost = getattr(sys.modules[__name__], data["cost"])
-    net = Network(data["sizes"], cost=cost)
+    net = MatrixNetwork(data["sizes"], cost=cost)
     net.weights = [np.array(w) for w in data["weights"]]
     net.biases = [np.array(b) for b in data["biases"]]
     return net
@@ -234,3 +240,49 @@ def vectorized_result(j):
     e[j] = 1.0
     return e
 
+
+def create_minibatches(data, mini_batch_size):
+    n = len(data)
+    mini_batches = [
+        data[k:k + mini_batch_size]
+        for k in xrange(0, n, mini_batch_size)]
+    data_batches = []
+    label_batches = []
+    for batch in mini_batches:
+        x, y = zip(*batch)
+        data_batches.append(np.array(x).squeeze())
+        label_batches.append(np.array(y).squeeze())
+    return data_batches, label_batches
+
+
+if __name__ == "__main__":
+    import time
+    from utils import mnist_loader
+    from utils import toy_loader
+    from sklearn import preprocessing
+
+    # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+    # print("MNIST data is loaded...")
+    feature_dim = 3
+    train_data, validation_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
+                                                                  n_features=feature_dim, n_classes=2,
+                                                                  scaler=preprocessing.StandardScaler())
+    print("Toy data is loaded...")
+    epochs = 10
+    mini_batch = 5
+    learn_rate = 0.1
+    architecture = [feature_dim, 2]
+    # net = Network(architecture)
+    net = MatrixNetwork(architecture)
+    # training
+    start_time = time.time()
+    eval_cost, eval_acc, tr_cost, tr_acc = net.SGD(train_data, epochs, mini_batch,
+                                                   learn_rate, evaluation_data=validation_data,
+                                                   monitor_evaluation_cost=True,
+                                                   monitor_evaluation_accuracy=True,
+                                                   monitor_training_cost=True)
+    end_time = time.time()
+    print("Time: " + str(end_time - start_time))
+    print(eval_acc)
+    print(eval_cost[-1])  # 0.05522
+    print(tr_cost[-1])  # 0.05845

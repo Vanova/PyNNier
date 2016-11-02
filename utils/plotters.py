@@ -32,6 +32,7 @@ def plot_2d_scatter(ax, x, y):
     # take data points by the color
     id_lbl = (y * [1, 2]).sum(axis=1)
     colors = COLORS.take(id_lbl)
+    # POINT_STYLES.take([1, 2, 0, 2, 1, 1], axis=0)
     for c, m in zip(COLORS, MARKERS):
         xr = x[np.where(colors == c)]  # take class by color
         if len(xr):
@@ -86,7 +87,7 @@ def show_curve(y, labels, title):
     plt.plot(y, 'b-')
     plt.xlabel(labels[0], fontdict=plts.label_font)
     plt.ylabel(labels[1], fontdict=plts.label_font)
-    plt.title(title)
+    plt.title(title, fontdict=plts.title_font)
     plt.grid()
     plt.show()
 
@@ -123,7 +124,7 @@ class NetworkVisualiser:
             ax = fig.add_subplot(2, neurons, (i + 1) + neurons)
             cntr = contour_view(ax, ws1, ws2, cost_ws, xlim, ylim, axis_labs)
             fig.colorbar(cntr, **self._color_bar_settings)
-        plt.suptitle(title, fontsize=15)
+        plt.suptitle(title, fontdict=plts.title_font)
         plt.show()
 
     def plot_decision_boundaries(self, network, data, xlim, ylim, title="Network decision boundary"):
@@ -143,7 +144,7 @@ class NetworkVisualiser:
             data_x, data_y = toy_loader.plot_format(data)
             plot_2d_scatter(ax, data_x, data_y)
             fig.colorbar(cntr, **self._color_bar_settings)
-        plt.suptitle(title, fontsize=15)
+        plt.suptitle(title, fontdict=plts.title_font)
         plt.show()
 
     def plot_network_optimisation(self, network, data, xlim, ylim, opt_weights=None, fun_name="$E$",
@@ -183,7 +184,7 @@ class NetworkVisualiser:
             ax.scatter(opt_weights[-1][id_layer][i, 0], opt_weights[-1][id_layer][i, 1], c='red', s=100, marker='*')
 
             fig.colorbar(cntr, **self._color_bar_settings)
-        plt.suptitle(title, fontsize=15)
+        plt.suptitle(title, fontdict=plts.title_font)
         plt.show()
         # TODO 3D weights case
 

@@ -206,19 +206,19 @@ if __name__ == '__main__':
     mini_batch = 10
     learn_rate = 3.0
     net = Network([784, 30, 10])
-    file_net = "./data/experiment/nist/nist_epo_{0}_btch_{1}_lr_{2}". \
-        format(epochs, mini_batch, learn_rate)
     # training
     start_time = time.time()
-    f1, loss = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    f1, loss, _ = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    end_time = time.time()
+    print("Time: " + str(end_time - start_time))
     print(f1)
     print(loss)
-    end_time = time.time()
     # save
+    file_net = "./data/experiment/nist/nist_epo_{0}_btch_{1}_lr_{2}". \
+        format(epochs, mini_batch, learn_rate)
     net.save(file_net)
     # test load
     net2 = load(file_net)
-    f1, loss = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    f1, loss, _ = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
     print(f1)
     print(loss)
-    print("Time: " + str(end_time - start_time))

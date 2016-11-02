@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from utils import toy_loader
 from sklearn import preprocessing
@@ -6,9 +7,14 @@ import utils.plotters as viz
 from ann import network
 from ann import mif_network
 
+np.random.seed(777)
+
+DATA_PATH = "./data/experiment/toy/"
+
 SET_TITLES = ['Training set',
               'Test set',
               'Dev set']
+
 
 def plot_toy_data(data_list, titles, feature_dim):
     # TODO feat dim 2D or 3D
@@ -61,47 +67,46 @@ feature_dim = 2
 train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
                                                        n_features=feature_dim, n_classes=2,
                                                        scaler=preprocessing.StandardScaler())
-# plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
-# data_stats(train_data)
+plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
+data_stats(train_data)
 
 #####
 # Simple toy experiment
 # 1.MSE loss and Sigmoid outputs
 #####
 epochs = 100
-mini_batch = 10
+mini_batch = 5
 learn_rate = 0.1
 architecture = [feature_dim, 2]
-network = network.Network(architecture)
+mse_network = network.Network(architecture)
 # Train the network
-network.default_weight_initializer()
-eval, train_loss, list_ws = network.SGD(train_data, epochs, mini_batch, learn_rate,
-                                        test_data=test_data, is_list_weights=True)
+eval, train_loss, list_ws = mse_network.SGD(train_data, epochs, mini_batch, learn_rate,
+                                            test_data=test_data, is_list_weights=True)
 print("mF1 on test set: {0}".format(eval[-1]))
 print("MSE loss: {0}".format(train_loss[-1]))
 print("Network optimal weights:")
-print(network.weights[-1])
+print(mse_network.weights[-1])
 ###
 # Visualize the optimized network
 ###
-net_viz = viz.NetworkVisualiser(network)
+net_viz = viz.NetworkVisualiser(mse_network)
 # visualize network classification decisions
-net_viz.plot_decision_boundaries(network, train_data, xlim=[-4, 4], ylim=[-4, 4],
+net_viz.plot_decision_boundaries(mse_network, train_data, xlim=[-4, 4], ylim=[-4, 4],
                                  title="Decision surface")
-net_viz.plot_neurons_cost_surface(network, train_data, xlim=[-5, 5], ylim=[-5, 5],
+net_viz.plot_neurons_cost_surface(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
                                   title="The MSE error surface")
-net_viz.plot_network_optimisation(network, train_data, xlim=[-5, 5], ylim=[-5, 5],
+net_viz.plot_network_optimisation(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
                                   opt_weights=list_ws,
                                   title="The MSE cost optimization")
 
-file_net = "./data/experiment/toy/toy_epo_{0}_btch_{1}_lr_{2}". \
-    format(epochs, mini_batch, learn_rate)
-network.save(file_net)
-network = network.load(file_net)
+file_net = os.path.join(DATA_PATH, "toy_mse_epo_{}_btch_{}_lr_{}".
+                        format(epochs, mini_batch, learn_rate))
+mse_network.save(file_net)
+mse_network = network.load(file_net)
 
 #####
 # 2.MFoM network with Sigmoid outputs
 #####
-epochs = 100
-net = mif_network.MifNetwork(architecture, alpha=5., beta=0)
-eval, loss = net.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
+epochs = 10
+mfom_network = mif_network.MifNetwork(architecture, alpha=5., beta=0)
+eval, train_loss, list_ws = mfom_network.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
