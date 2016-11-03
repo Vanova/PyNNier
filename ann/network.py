@@ -79,8 +79,6 @@ class Network(object):
                 err = self.evaluate(test_data)
                 true_pos = self.correct_count(test_data)
                 self.eval_err_progress.append(err)
-                # print("Epoch {0}: F1_error_tst = {1}, MSE_loss = {2}, TP = {3} / {4}".
-                #       format(j, err, mean_loss, true_pos, n_test))
                 print("Epoch {0}: F1_error_tst = {1}, MSE_loss = {2}".
                       format(j, err, mean_loss))
             else:

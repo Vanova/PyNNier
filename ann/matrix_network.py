@@ -10,7 +10,7 @@ import numpy as np
 import cost_functions as cf
 
 np.random.seed(777)
-# random.seed(777)
+random.seed(777)
 
 
 #### Main Network class
@@ -74,8 +74,8 @@ class MatrixNetwork(object):
             random.shuffle(training_data)
             data_batches, label_batches = create_minibatches(training_data, mini_batch_size)
             for X, Y in zip(data_batches, label_batches):
-                self.update_mini_batch(
-                    X, Y, eta, lmbda, len(training_data))
+                self.update_mini_batch(X, Y, eta,
+                                       lmbda, len(training_data))
             print "Epoch %s training complete" % j
             # monitoring
             if monitor_training_cost:
@@ -100,7 +100,7 @@ class MatrixNetwork(object):
         return evaluation_cost, evaluation_accuracy, \
                training_cost, training_accuracy
 
-    def update_mini_batch(self, data, labs, eta, lmbda, n):
+    def update_mini_batch(self, data_batch, labs, eta, lmbda, n):
         """Update the network's weights and biases by applying gradient
         descent using backpropagation to a single mini batch.  The
         ``data and labs`` are two arrayes, ``eta`` is the
@@ -108,13 +108,13 @@ class MatrixNetwork(object):
         ``n`` is the total size of the training data set.
 
         """
-        nabla_b, nabla_w = self.backprop(data, labs)
+        nabla_b, nabla_w = self._backprop(data_batch, labs)
         self.biases = [b - eta * nb
                        for b, nb in zip(self.biases, nabla_b)]
         self.weights = [(1 - eta * (lmbda / n)) * w - eta * nw
                         for w, nw in zip(self.weights, nabla_w)]
 
-    def backprop(self, x, y):
+    def _backprop(self, x, y):
         """ Input: x, y - matrices (batch_size, dim1)
         Return a tuple ``(nabla_b, nabla_w)`` representing the
         gradient for the cost function C_x.  ``nabla_b`` and
@@ -125,7 +125,7 @@ class MatrixNetwork(object):
         activations = [x]  # list to store all the activations, layer by layer
         zs = []  # list to store all the z vectors, layer by layer
         for b, w in zip(self.biases, self.weights):
-            z = np.dot(x, w) + b
+            z = np.dot(activation, w) + b
             zs.append(z)
             activation = cf.sigmoid(z)
             activations.append(activation)
@@ -147,9 +147,9 @@ class MatrixNetwork(object):
         for l in xrange(2, self.num_layers):
             z = zs[-l]
             sp = cf.sigmoid_prime(z)
-            delta = np.dot(self.weights[-l + 1].transpose(), delta) * sp
+            delta = np.dot(delta, self.weights[-l + 1].transpose()) * sp
             nabla_b[-l] = delta
-            nabla_w[-l] = np.dot(delta, activations[-l - 1].transpose())
+            nabla_w[-l] = np.dot(activations[-l - 1].transpose(), delta)
         avg_nabla_b = [np.mean(nb, axis=0) for nb in nabla_b]
         avg_nabla_w = [nw/mini_batch_size for nw in nabla_w]
         return avg_nabla_b, avg_nabla_w
@@ -242,6 +242,7 @@ def vectorized_result(j):
 
 
 def create_minibatches(data, mini_batch_size):
+    # TODO fix format during loading, not training
     n = len(data)
     mini_batches = [
         data[k:k + mini_batch_size]
@@ -257,12 +258,9 @@ def create_minibatches(data, mini_batch_size):
 
 if __name__ == "__main__":
     import time
-    from utils import mnist_loader
     from utils import toy_loader
     from sklearn import preprocessing
 
-    # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
-    # print("MNIST data is loaded...")
     feature_dim = 3
     train_data, validation_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
                                                                   n_features=feature_dim, n_classes=2,
@@ -272,7 +270,6 @@ if __name__ == "__main__":
     mini_batch = 5
     learn_rate = 0.1
     architecture = [feature_dim, 2]
-    # net = Network(architecture)
     net = MatrixNetwork(architecture)
     # training
     start_time = time.time()
@@ -284,5 +281,5 @@ if __name__ == "__main__":
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
     print(eval_acc)
-    print(eval_cost[-1])  # 0.05522
-    print(tr_cost[-1])  # 0.05845
+    print(eval_cost[-1])  # 0.05727
+    print(tr_cost[-1])  # 0.07007
