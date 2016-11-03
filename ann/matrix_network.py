@@ -74,8 +74,8 @@ class MatrixNetwork(object):
             random.shuffle(training_data)
             data_batches, label_batches = create_minibatches(training_data, mini_batch_size)
             for X, Y in zip(data_batches, label_batches):
-                self.update_mini_batch(X, Y, eta,
-                                       lmbda, len(training_data))
+                self._update_mini_batch(X, Y, eta,
+                                        lmbda, len(training_data))
             print "Epoch %s training complete" % j
             # monitoring
             if monitor_training_cost:
@@ -100,7 +100,7 @@ class MatrixNetwork(object):
         return evaluation_cost, evaluation_accuracy, \
                training_cost, training_accuracy
 
-    def update_mini_batch(self, data_batch, labs, eta, lmbda, n):
+    def _update_mini_batch(self, data_batch, labs_batch, eta, lmbda, n):
         """Update the network's weights and biases by applying gradient
         descent using backpropagation to a single mini batch.  The
         ``data and labs`` are two arrayes, ``eta`` is the
@@ -108,7 +108,7 @@ class MatrixNetwork(object):
         ``n`` is the total size of the training data set.
 
         """
-        nabla_b, nabla_w = self._backprop(data_batch, labs)
+        nabla_b, nabla_w = self._backprop(data_batch, labs_batch)
         self.biases = [b - eta * nb
                        for b, nb in zip(self.biases, nabla_b)]
         self.weights = [(1 - eta * (lmbda / n)) * w - eta * nw
@@ -135,7 +135,6 @@ class MatrixNetwork(object):
         nabla_w = [np.zeros(w.shape) for w in self.weights]
 
         delta = (self.cost).delta(zs[-1], activations[-1], y)
-        # TODO fix here
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(activations[-2].transpose(), delta)
         # Note that the variable l in the loop below is used a little

@@ -41,6 +41,23 @@ class CrossEntropyCost(object):
         return (a - y)
 
 
+class MFoMCost(object):
+    @staticmethod
+    def fn(a, y):
+        """Return the cost associated with an output ``a`` and desired output
+        ``y``.
+        Input:
+        Output:
+        """
+        pass
+
+
+    @staticmethod
+    def delta(z, a, y):
+        """Return the error delta from the output layer."""
+        pass
+
+
 ### Other functions
 
 def sigmoid(z):

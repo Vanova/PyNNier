@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import time
 from utils import mnist_loader
 from ann import network
-from ann import mif_network
+from ann import mfom_network
 from ann import rnd_feedback_network
 
 
@@ -168,7 +168,7 @@ if exp == 'nist_mfom':
     epochs = 10
     mini_batch = 10
     learn_rate = 0.0001
-    net2 = mif_network.MifNetwork(architecture)
+    net2 = mfom_network.MFoMNetwork(architecture)
     net2.biases = net1.biases
     net2.weights = net1.weights
     print("Micro F1 before MFoM training: {0}".format(net2.evaluate(test_data)))

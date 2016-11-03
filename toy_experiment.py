@@ -5,7 +5,7 @@ from utils import toy_loader
 from sklearn import preprocessing
 import utils.plotters as viz
 from ann import network
-from ann import mif_network
+from ann import mfom_network
 
 np.random.seed(777)
 
@@ -108,5 +108,5 @@ mse_network = network.load(file_net)
 # 2.MFoM network with Sigmoid outputs
 #####
 epochs = 10
-mfom_network = mif_network.MifNetwork(architecture, alpha=5., beta=0)
+mfom_network = mfom_network.MFoMNetwork(architecture, alpha=5., beta=0)
 eval, train_loss, list_ws = mfom_network.SGD(train_data, epochs, mini_batch, learn_rate, test_data=test_data)
