@@ -108,49 +108,55 @@ class MatrixNetwork(object):
         ``n`` is the total size of the training data set.
 
         """
-        nabla_b, nabla_w = self._backprop(data_batch, labs_batch)
+        # forward data through the net
+        affines, activations = self._propagate(data_batch)
+        # back propagate and calculate gradient on the whole batch
+        nabla_b, nabla_w = self._backprop(affines, activations, labs_batch)
+
         self.biases = [b - eta * nb
                        for b, nb in zip(self.biases, nabla_b)]
         self.weights = [(1 - eta * (lmbda / n)) * w - eta * nw
                         for w, nw in zip(self.weights, nabla_w)]
 
-    def _backprop(self, x, y):
+    def _propagate(self, x):
+        """
+        Input: 2D array: rows = # of samples, columns = dim
+        :return: list of activations from all hidden layers
+         of the network
+        """
+        a = x
+        acts = [x]  # list to store all the activations, layer by layer
+        lin = []
+        for b, w in zip(self.biases, self.weights):
+            z = np.dot(a, w) + b
+            lin.append(z)
+            a = cf.sigmoid(z)
+            acts.append(a)
+        return lin, acts
+
+    def _backprop(self, affines, activations, labels):
         """ Input: x, y - matrices (batch_size, dim1)
         Return a tuple ``(nabla_b, nabla_w)`` representing the
         gradient for the cost function C_x.  ``nabla_b`` and
         ``nabla_w`` are layer-by-layer lists of numpy arrays, similar
         to ``self.biases`` and ``self.weights``."""
-        # feedforward
-        activation = x
-        activations = [x]  # list to store all the activations, layer by layer
-        zs = []  # list to store all the z vectors, layer by layer
-        for b, w in zip(self.biases, self.weights):
-            z = np.dot(activation, w) + b
-            zs.append(z)
-            activation = cf.sigmoid(z)
-            activations.append(activation)
-        # backward pass
-        mini_batch_size = x.shape[0]
+        ### calculate network error signal
+        delta = (self.cost).delta(affines[-1], activations[-1], labels)
+        ###
+        mini_batch_size = activations[0].shape[0]
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
-
-        delta = (self.cost).delta(zs[-1], activations[-1], y)
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(activations[-2].transpose(), delta)
-        # Note that the variable l in the loop below is used a little
-        # differently to the notation in Chapter 2 of the book.  Here,
-        # l = 1 means the last layer of neurons, l = 2 is the
-        # second-last layer, and so on.  It's a renumbering of the
-        # scheme in the book, used here to take advantage of the fact
-        # that Python can use negative indices in lists.
+
         for l in xrange(2, self.num_layers):
-            z = zs[-l]
+            z = affines[-l]
             sp = cf.sigmoid_prime(z)
             delta = np.dot(delta, self.weights[-l + 1].transpose()) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(activations[-l - 1].transpose(), delta)
         avg_nabla_b = [np.mean(nb, axis=0) for nb in nabla_b]
-        avg_nabla_w = [nw/mini_batch_size for nw in nabla_w]
+        avg_nabla_w = [nw / mini_batch_size for nw in nabla_w]
         return avg_nabla_b, avg_nabla_w
 
     def accuracy(self, data, convert=False):
@@ -216,7 +222,6 @@ class MatrixNetwork(object):
 def load(filename):
     """Load a neural network from the file ``filename``.  Returns an
     instance of Network.
-
     """
     f = open(filename, "r")
     data = json.load(f)
@@ -233,7 +238,6 @@ def vectorized_result(j):
     """Return a 10-dimensional unit vector with a 1.0 in the j'th position
     and zeroes elsewhere.  This is used to convert a digit (0...9)
     into a corresponding desired output from the neural network.
-
     """
     e = np.zeros((10, 1))
     e[j] = 1.0
@@ -261,14 +265,14 @@ if __name__ == "__main__":
     from sklearn import preprocessing
 
     feature_dim = 3
-    train_data, validation_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
-                                                                  n_features=feature_dim, n_classes=2,
+    n_classes = 2
+    train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
                                                                   scaler=preprocessing.StandardScaler())
     print("Toy data is loaded...")
     epochs = 10
     mini_batch = 5
     learn_rate = 0.1
-    architecture = [feature_dim, 2]
+    architecture = [feature_dim, n_classes]
     net = MatrixNetwork(architecture)
     # training
     start_time = time.time()

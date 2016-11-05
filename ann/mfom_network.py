@@ -32,15 +32,18 @@ class MFoMNetwork(object):
         # random weights and bias initialization
         self.default_weight_initializer()
         self.cost = cost
+        if self.cost == cf.MFoMCost:
+            self.cost.alpha = alpha
+            self.cost.beta = beta
 
         # for discrete mF1
         self.threshold = 0.5
-        self.num_positive_lbls = 0
-        self.correct = 0
-        self.false_alarm = 0
+        # self.num_positive_lbls = 0
+        # self.correct = 0
+        # self.false_alarm = 0
         # for smooth mF1
-        self.smooth_correct = 0.0
-        self.smooth_false_alarm = 0.0
+        # self.smooth_correct = 0.0
+        # self.smooth_false_alarm = 0.0
 
     def default_weight_initializer(self):
         # rows = #_of_samples, columns = dim
@@ -128,11 +131,9 @@ class MFoMNetwork(object):
         The ``mini_batch`` is a list of tuples ``(x, y)``, and ``eta``
         is the learning rate."""
         # forward data through the net
-        activations = self._propagate(data_batch)
+        affines, activations = self._propagate(data_batch)
         # back propagate and calculate gradient on the whole batch
-        nabla_b, nabla_w = self._backprop(activations, labs_batch)
-
-        nabla_b, nabla_w = self.__backprop_on_batch(activations, lab_pred, lab)
+        nabla_b, nabla_w = self._backprop(affines, activations, labs_batch)
 
         # TODO add momentum
         self.weights = [w - eta * nw
@@ -147,108 +148,42 @@ class MFoMNetwork(object):
          of the network
         """
         a = x
-        activations = [x]  # list to store all the activations, layer by layer
+        acts = [x]  # list to store all the activations, layer by layer
+        lin = []
         for b, w in zip(self.biases, self.weights):
             z = np.dot(a, w) + b
+            lin.append(z)
             a = cf.sigmoid(z)
-            activations.append(a)
-        return activations
+            acts.append(a)
+        return lin, acts
 
-    def __backprop_on_batch(self, batch_acts, lab_pred, lab):
+    def _backprop(self, affines, activations, labels):
         """
         Calculate back propagation on the mini-batch
-        :param batch_acts: list of lists with activation arrays on every net layer
+        :param activations: list of lists with activation arrays on every net layer
         :param lab_pred: list of arrays with net outputs,
         just a copy of the last layer activations
-        :param lab: data labels
+        :param labels: data labels
         :return: gradient DF/DW on the mini batch
         """
         ### calculate network error signal
-        batch_delta = self.__cost_derivative(lab_pred, lab)
-
-        # gradient on the mini batch
+        delta = (self.cost).delta(affines[-1], activations[-1], labels)
+        ########
+        mini_batch_size = activations[0].shape[0]
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
-        # partial derivative on every sample
-        delta_nabla_b = [np.zeros(b.shape) for b in self.biases]
-        delta_nabla_w = [np.zeros(w.shape) for w in self.weights]
+        nabla_b[-1] = delta
+        nabla_w[-1] = np.dot(activations[-2].transpose(), delta)
 
-        for delta, acts in zip(batch_delta, batch_acts):
-            delta_nabla_b[-1] = delta
-            delta_nabla_w[-1] = np.dot(delta, acts[-2].transpose())
-            # start from the output of network, last layer l=-1
-            for l in xrange(2, self.num_layers):
-                a = acts[-l]
-                sp = a * (1 - a)
-                delta = np.dot(self.weights[-l + 1].transpose(), delta) * sp
-                delta_nabla_b[-l] = delta
-                delta_nabla_w[-l] = np.dot(delta, acts[-l - 1].transpose())
-            # sum up the gradient
-            nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
-            nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        return (nabla_b, nabla_w)
-
-    def __cost_derivative(self, lab_pred, lab):
-        """Return the list of partial derivatives \partial F_x /\partial z
-        for the output activations.
-        F = 2TP/(FP + TP + npos),
-        npos = TP + FN - number of positive samples
-        :param lab_pred: network output on batch, list of arrays
-        :return diff: list of gradients on each sample prediction
-        """
-        npos = 0
-        # discrete thresholded counters
-        # tp, fp = 0, 0
-        # smooth approximation
-        smooth_tp, smooth_fp = 0.0, 0.0
-        diff = []
-        nclass, _ = lab_pred[0].shape
-        dl = np.array((nclass, 1))
-        ebeta = math.exp(-self.beta)
-
-        for p, y in zip(lab_pred, lab):
-            ### normalization
-            sum = np.sum(np.exp(p), axis=0)
-            normp = np.exp(p) / sum
-            ### strategy function
-            dk = (nclass - 1) * normp / (1.0 - normp)
-            l = 1.0 / (1.0 + np.power(dk, self.alpha) * ebeta)
-
-            npos += (y == 1).sum()
-            smooth_tp += np.sum((1.0 - l) * y, axis=0)[0]
-            smooth_fp += np.sum((1.0 - l) * np.logical_not(y), axis=0)[0]
-
-            Dl = self.alpha * l * (1.0 - l)
-            ### sum of rows of Jacobian matrix dl/dz
-            # TODO check this inference
-            off_diag = np.empty((nclass, 1))
-            diag = Dl / (1.0 - normp)
-            sd = np.sum(diag, axis=0)
-            off_diag.fill(sd[0])
-            # off_diag.fill(0.0)
-            sumJ = (off_diag * normp - diag) * p * (1.0 - p)
-            diff.append(sumJ)
-
-        ### the gradient of mF1 objective function
-        a2 = (smooth_tp + smooth_fp + npos) * (smooth_tp + smooth_fp + npos)
-        # if x_i in class C_k
-        scale_pos = 2.0 * (smooth_fp + npos) / a2
-        # if x_i not in class C_k
-        scale_neg = -2.0 * smooth_tp / a2
-        for i in xrange(len(diff)):
-            # masked multiplication
-            pos = diff[i] * scale_pos * lab[i]
-            neg = diff[i] * scale_neg * np.logical_not(lab[i])
-            diff[i] = pos + neg
-
-        # for discrete micro F1
-        # self.correct += tp
-        # self.false_alarm += fp
-        # micro F1 progress
-        self.num_positive_lbls += npos
-        self.smooth_correct += smooth_tp
-        self.smooth_false_alarm += smooth_fp
-        return diff
+        for l in xrange(2, self.num_layers):
+            z = affines[-l]
+            sp = cf.sigmoid_prime(z)
+            delta = np.dot(delta, self.weights[-l + 1].transpose()) * sp
+            nabla_b[-l] = delta
+            nabla_w[-l] = np.dot(activations[-l - 1].transpose(), delta)
+        avg_nabla_b = [np.mean(nb, axis=0) for nb in nabla_b]
+        avg_nabla_w = [nw / mini_batch_size for nw in nabla_w]
+        return avg_nabla_b, avg_nabla_w
 
     def total_cost(self):
         """Return the smoothed MicroF1 value."""
@@ -294,23 +229,30 @@ def create_minibatches(data, mini_batch_size):
 
 
 if __name__ == '__main__':
-    from lib import mnist_loader
-    from lib import toy_loader
+    import time
+    from utils import toy_loader
+    from sklearn import preprocessing
 
-    # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
-    training_data, validation_data, test_data = toy_loader.load_data(n_features=3)
-    print("MNIST data is loaded...")
+    feature_dim = 3
+    n_classes = 2
+    train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
+                                                                  scaler=preprocessing.StandardScaler())
+    print("Toy data is loaded...")
     epochs = 10
     mini_batch = 5
     learn_rate = 0.1
-    architecture = [3, 10, 2]
-    # architecture = [784, 30, 10]
-    net2 = MFoMNetwork(architecture)
-    print("MFoM micro F1 training...")
+    architecture = [feature_dim, n_classes]
+    net = MFoMNetwork(architecture)
+    # training
     start_time = time.time()
-    err, loss = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    eval_cost, eval_acc, tr_cost, tr_acc = net.SGD(train_data, epochs, mini_batch,
+                                                   learn_rate, evaluation_data=validation_data,
+                                                   monitor_evaluation_cost=True,
+                                                   monitor_evaluation_accuracy=True,
+                                                   monitor_training_cost=True,
+                                                   monitor_training_accuracy=True)
     end_time = time.time()
-    total_time = end_time - start_time
-    print(err)
-    print(loss)
-    print("Time: " + str(total_time))
+    print("Time: " + str(end_time - start_time))
+    print(eval_acc)
+    print(eval_cost[-1])  # 0.05727
+    print(tr_cost[-1])  # 0.07007
