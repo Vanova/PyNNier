@@ -80,14 +80,19 @@ def surface_view(ax, x, y, z, xlim, ylim, labels):
     return surf
 
 
-def show_curve(y, labels, title):
+def show_curves(y, legend=None, labels=None, title=None):
     """
     Plot curve, starting from x = 0
     """
-    plt.plot(y, 'b-')
-    plt.xlabel(labels[0], fontdict=plts.label_font)
-    plt.ylabel(labels[1], fontdict=plts.label_font)
-    plt.title(title, fontdict=plts.title_font)
+    for it in y:
+        plt.plot(it)
+    if legend:
+        plt.legend(legend, loc='upper left')
+    if labels:
+        plt.xlabel(labels[0], fontdict=plts.label_font)
+        plt.ylabel(labels[1], fontdict=plts.label_font)
+    if title:
+        plt.title(title, fontdict=plts.title_font)
     plt.grid()
     plt.show()
 

@@ -49,10 +49,18 @@ class MFoMCost(object):
     def fn(a, y):
         """Return the cost associated with an output ``a`` and desired output
         ``y``.
-        Input:
-        Output:
+        :param a: network output on batch or the whole dataset, 2D array, smp x dim
+        :param y: binary multi-labels, 2D array, smp x dim
         """
-        pass
+        l = MFoMCost.class_loss_scores(a)
+        # smooth approximation
+        yneg = np.logical_not(y)
+        npos = (y == 1).sum()
+        smooth_fp = np.sum((1.0 - l) * yneg)
+        smooth_tp = np.sum((1.0 - l) * y)
+        f1_error = 100.0 - 200.0 * smooth_tp / \
+                           (smooth_tp + smooth_fp + npos)
+        return f1_error
 
     @staticmethod
     def delta(z, a, y):
@@ -83,20 +91,38 @@ class MFoMCost(object):
         # Jacobian
         delta_l = MFoMCost.alpha * l * (1.0 - l)
         sum_jac = np.zeros((nsamples, nclass))
-        # TODO check the sum
+        # TODO check the sum inference of Jacobian
         # weighted jacobian on every sample
         # for dl_smp, snorm_smp, y_smp, a_smp in zip(delta_l, norms, y, a):
         #     sum_jac += MFoMCost.weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp,
         #                                       npos + smooth_fp, smooth_tp)
         count = 0
         for dl_smp, snorm_smp, y_smp, a_smp in zip(delta_l, norms, y, a):
-            sum_jac[count] = MFoMCost.weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp,
-                                              npos + smooth_fp, smooth_tp)
-            count+=1
+            sum_jac[count] = MFoMCost._weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp,
+                                                         npos + smooth_fp, smooth_tp)
+            count += 1
         return 2. * sum_jac / (smooth_fp + smooth_tp + npos) ** 2
 
     @staticmethod
-    def weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp, scale_pos, scale_neg):
+    def class_loss_scores(a):
+        """
+        Calculate class loss function with "ONE-vs-OTHERS"
+        misclassification measure
+        :param a: network output signal, e.g. sigmoid scores
+        """
+        nclass = a.shape[1]
+        # softmax normalization: ssigma in report
+        norms = softmax(a)
+        # calculate class loss function l
+        # TODO check the loss inference!!! L FUNCTION INVERSE SCORES!!!
+        d = (nclass - 1) * norms / (1.0 - norms)
+        ebeta = np.exp(-MFoMCost.beta)
+        l = 1.0 / (1.0 + np.power(d, MFoMCost.alpha) * ebeta)
+        return l
+
+
+    @staticmethod
+    def _weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp, scale_pos, scale_neg):
         nclass = snorm_smp.shape[0]
         diag_elements = dl_smp / (1.0 - snorm_smp)
         diag = np.diag(diag_elements)
@@ -104,12 +130,16 @@ class MFoMCost(object):
         off_diag = off_diag * snorm_smp.reshape((-1, 1))
         # sigmoid derivative
         a_prime = a_smp * (1.0 - a_smp)
+        # TODO explore diag-offdiag MFoM loss
+        # J = -diag * a_prime.reshape((-1, 1))
         J = (-diag + off_diag) * a_prime.reshape((-1, 1))
         # weighting the Jacobian
         y_pos = (y_smp == 1.0)
         y_neg = np.invert(y_pos)
         W = scale_pos * y_pos - scale_neg * y_neg
         return np.dot(J, W.reshape((-1, 1))).T
+
+
 
 
 ### Other functions
@@ -143,5 +173,8 @@ def step(a, threshold=0.0):
     :param a: array
     :return: array
     """
-    res = [[0] if x < threshold else [1] for x in a]
-    return np.array(res)  # need column
+    # TODO refactor!!!
+    res = np.zeros_like(a)
+    res[a < threshold] = 0
+    res[a >= threshold] = 1
+    return res

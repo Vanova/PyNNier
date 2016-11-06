@@ -10,8 +10,6 @@ and omits many desirable features.
 """
 
 import random
-import math
-import time
 import json
 import numpy as np
 from functions import metrics
@@ -22,8 +20,6 @@ random.seed(777)
 
 
 class MFoMNetwork(object):
-    TRUE_LABEL = 1
-
     def __init__(self, sizes, alpha=10.0, beta=0.0, cost=cf.MFoMCost):
         self.num_layers = len(sizes)
         self.sizes = sizes
@@ -65,16 +61,6 @@ class MFoMNetwork(object):
             a = cf.sigmoid(np.dot(a, w) + b)
         return a
 
-    def accuracy(self, test_data):
-        """Calculate discrete MicroF1 value.
-        Input: tuple list of ndarrays (data, target),
-        targets should be binary vector"""
-        net_predicts = [self.feedforward(xy[0]) for xy in test_data]
-        refs = [xy[1] for xy in test_data]
-        # threshold net output
-        pred_labs = [cf.step(x, self.threshold) for x in net_predicts]
-        return metrics.micro_f1(refs, pred_labs, False)
-
     def SGD(self, training_data, epochs, mini_batch_size, eta,
             lmbda=0.0,
             evaluation_data=None,
@@ -105,25 +91,58 @@ class MFoMNetwork(object):
                 training_cost.append(cost)
                 print "Cost on training data (smooth F1): {}".format(cost)
             if monitor_training_accuracy:
-                accuracy = self.accuracy(training_data, convert=False)
+                accuracy = self.accuracy(training_data, class_loss_scores=True)
                 training_accuracy.append(accuracy)
-                print "Accuracy on training data (discrete F1): {} / {}".format(
-                    accuracy, n)
+                print "Error rate on training data (discrete F1): {}". \
+                    format(accuracy)
             if monitor_evaluation_cost:
-                cost = self.total_cost(evaluation_data, lmbda, convert=False)
+                cost = self.total_cost(evaluation_data, lmbda)
                 evaluation_cost.append(cost)
                 print "Cost on evaluation data (smooth F1): {}".format(cost)
             if monitor_evaluation_accuracy:
-                accuracy = self.accuracy(evaluation_data, convert=True)
+                accuracy = self.accuracy(evaluation_data, class_loss_scores=True)
                 evaluation_accuracy.append(accuracy)
-                print "Accuracy on evaluation data (discrete F1): {} / {}".format(
-                    self.accuracy(evaluation_data, convert=True), n_data)
+                print "Error rate on evaluation data (discrete F1): {}". \
+                    format(accuracy)
             print
-
-        # evaluation_smooth_f1, evaluation_discrete_f1
-        # training_smooth_f1, training_discrete_f1
         return evaluation_cost, evaluation_accuracy, \
                training_cost, training_accuracy
+
+    def total_cost(self, data, lmbda, convert=False):
+        """Return the total cost for the data set ``data``.  The flag
+        ``convert`` should be set to False if the data set is the
+        training data (the usual case), and to True if the data set is
+        the validation or test data.  See comments on the similar (but
+        reversed) convention for the ``accuracy`` method, above.
+        """
+        nclass = data[0][1].shape[0]
+        nsamples = len(data)
+        matrix_a = np.zeros((nsamples, nclass))
+        matrix_y = np.zeros((nsamples, nclass))
+        count = 0
+        for x, y in data:
+            x = x.transpose()
+            y = y.transpose()
+            a = self.feedforward(x)
+            matrix_y[count] = y
+            matrix_a[count] = a
+            count += 1
+        return self.cost.fn(matrix_a, matrix_y)
+
+    def accuracy(self, data, class_loss_scores=False):
+        """Return the discrete micro F1 value
+        Input: list of tuple of ndarrays (data, label),
+        label should be binary vector
+        """
+        net_predicts = [self.feedforward(xy[0].T) for xy in data]
+        refs = [xy[1].T for xy in data]
+        if class_loss_scores:
+            # TODO NOTE that class loss function indicate an error not positive label,
+            # loss function inverse scores
+            net_predicts = [1.0 - self.cost.class_loss_scores(s) for s in net_predicts]
+        # threshold network score
+        pred_labs = [cf.step(x, self.threshold) for x in net_predicts]
+        return metrics.micro_f1(refs, pred_labs, False)
 
     def _update_mini_batch(self, data_batch, labs_batch, eta, lmbda, n):
         """Update the network's weights and biases by applying
@@ -167,7 +186,7 @@ class MFoMNetwork(object):
         :return: gradient DF/DW on the mini batch
         """
         ### calculate network error signal
-        delta = (self.cost).delta(affines[-1], activations[-1], labels)
+        delta = self.cost.delta(affines[-1], activations[-1], labels)
         ########
         mini_batch_size = activations[0].shape[0]
         nabla_b = [np.zeros(b.shape) for b in self.biases]
@@ -184,11 +203,6 @@ class MFoMNetwork(object):
         avg_nabla_b = [np.mean(nb, axis=0) for nb in nabla_b]
         avg_nabla_w = [nw / mini_batch_size for nw in nabla_w]
         return avg_nabla_b, avg_nabla_w
-
-    def total_cost(self):
-        """Return the smoothed MicroF1 value."""
-        return 100.0 - 200.0 * self.smooth_correct / \
-                       (self.smooth_correct + self.num_positive_lbls + self.smooth_false_alarm)
 
     def save(self, filename):
         """Save the neural network to the file ``filename``."""
@@ -232,17 +246,18 @@ if __name__ == '__main__':
     import time
     from utils import toy_loader
     from sklearn import preprocessing
+    from utils.plotters import show_curves
 
     feature_dim = 3
     n_classes = 2
     train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
                                                                   scaler=preprocessing.StandardScaler())
     print("Toy data is loaded...")
-    epochs = 10
+    epochs = 100
     mini_batch = 5
-    learn_rate = 0.1
+    learn_rate = 0.01
     architecture = [feature_dim, n_classes]
-    net = MFoMNetwork(architecture)
+    net = MFoMNetwork(architecture, alpha=20.0)
     # training
     start_time = time.time()
     eval_cost, eval_acc, tr_cost, tr_acc = net.SGD(train_data, epochs, mini_batch,
@@ -253,6 +268,20 @@ if __name__ == '__main__':
                                                    monitor_training_accuracy=True)
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
-    print(eval_acc)
-    print(eval_cost[-1])  # 0.05727
-    print(tr_cost[-1])  # 0.07007
+    print(eval_cost[-1])  # 13.5709565622
+    print(tr_cost[-1])  # 16.2268688151
+    show_curves([eval_cost, tr_cost],
+                legend=["evaluation cost", "training cost"],
+                labels=["# of epochs", "value"],
+                title="MFoM smooth F1 cost")
+    show_curves([eval_acc, tr_acc],
+                legend=["evaluation acc", "training acc"],
+                labels=["# of epochs", "value"],
+                title="MFoM discrete F1 cost")
+
+
+    # TODO NOTICE!!!
+    # + Compare sigmoid vs class loss function scores for discrete F1:
+    #    class loss scores better!!!
+    # - Compare sigmoid and MFoM networks F1, plot figures
+    # - Implement "Unit-vs-zeros" !!!
