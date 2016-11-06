@@ -8,6 +8,8 @@ import random
 import sys
 import numpy as np
 import cost_functions as cf
+from functions import metrics
+import copy
 
 np.random.seed(777)
 random.seed(777)
@@ -15,13 +17,14 @@ random.seed(777)
 
 #### Main Network class
 class MatrixNetwork(object):
-    def __init__(self, sizes, cost=cf.QuadraticCost):
+    def __init__(self, sizes, threshold_f1=0.5, cost=cf.QuadraticCost):
         """
         :param sizes: list contains the number of neurons in the respective
         layers of the network, e.g. [2, 3, 1].
         """
         self.num_layers = len(sizes)
         self.sizes = sizes
+        self.threshold_f1 = threshold_f1
         # random weights and bias initialization
         self.default_weight_initializer()
         self.cost = cost
@@ -49,6 +52,7 @@ class MatrixNetwork(object):
     def SGD(self, training_data, epochs, mini_batch_size, eta,
             lmbda=0.0,
             evaluation_data=None,
+            is_list_weights=False,
             monitor_evaluation_cost=False,
             monitor_evaluation_accuracy=False,
             monitor_training_cost=False,
@@ -70,6 +74,7 @@ class MatrixNetwork(object):
         n = len(training_data)
         evaluation_cost, evaluation_accuracy = [], []
         training_cost, training_accuracy = [], []
+        list_weights = []
         for j in xrange(epochs):
             random.shuffle(training_data)
             data_batches, label_batches = create_minibatches(training_data, mini_batch_size)
@@ -77,6 +82,9 @@ class MatrixNetwork(object):
                 self._update_mini_batch(X, Y, eta,
                                         lmbda, len(training_data))
             print "Epoch %s training complete" % j
+            # save network weights optimization, e.g. in order to plot
+            if is_list_weights:
+                list_weights.append(copy.deepcopy(self.weights))
             # monitoring
             if monitor_training_cost:
                 cost = self.total_cost(training_data, lmbda)
@@ -85,8 +93,7 @@ class MatrixNetwork(object):
             if monitor_training_accuracy:
                 accuracy = self.accuracy(training_data, convert=False)
                 training_accuracy.append(accuracy)
-                print "Accuracy on training data: {} / {}".format(
-                    accuracy, n)
+                print "Accuracy on training data (discrete F1): {}".format(accuracy)
             if monitor_evaluation_cost:
                 cost = self.total_cost(evaluation_data, lmbda, convert=False)
                 evaluation_cost.append(cost)
@@ -94,11 +101,10 @@ class MatrixNetwork(object):
             if monitor_evaluation_accuracy:
                 accuracy = self.accuracy(evaluation_data, convert=True)
                 evaluation_accuracy.append(accuracy)
-                print "Accuracy on evaluation data: {} / {}".format(
-                    self.accuracy(evaluation_data, convert=True), n_data)
+                print "Accuracy on evaluation data (discrete F1): {}".format(accuracy)
             print
         return evaluation_cost, evaluation_accuracy, \
-               training_cost, training_accuracy
+               training_cost, training_accuracy, list_weights
 
     def _update_mini_batch(self, data_batch, labs_batch, eta, lmbda, n):
         """Update the network's weights and biases by applying gradient
@@ -160,34 +166,15 @@ class MatrixNetwork(object):
         return avg_nabla_b, avg_nabla_w
 
     def accuracy(self, data, convert=False):
-        """Return the number of inputs in ``data`` for which the neural
-        network outputs the correct result. The neural network's
-        output is assumed to be the index of whichever neuron in the
-        final layer has the highest activation.
-
-        The flag ``convert`` should be set to False if the data set is
-        validation or test data (the usual case), and to True if the
-        data set is the training data. The need for this flag arises
-        due to differences in the way the results ``y`` are
-        represented in the different data sets.  In particular, it
-        flags whether we need to convert between the different
-        representations.  It may seem strange to use different
-        representations for the different data sets.  Why not use the
-        same representation for all three data sets?  It's done for
-        efficiency reasons -- the program usually evaluates the cost
-        on the training data and the accuracy on other data sets.
-        These are different types of computations, and using different
-        representations speeds things up.  More details on the
-        representations can be found in
-        mnist_loader.load_data_wrapper.
-        """
-        if convert:
-            results = [(np.argmax(self.feedforward(x.transpose())), np.argmax(y.transpose()))
-                       for (x, y) in data]
-        else:
-            results = [(np.argmax(self.feedforward(x)), y)
-                       for (x, y) in data]
-        return sum(int(x == y) for (x, y) in results)
+        """Return micro F1 error on test data"""
+        predicts = []
+        refs = []
+        for x, y in data:
+            # thresholded prediction
+            p = cf.step(self.feedforward(x.T), self.threshold_f1)
+            predicts.append(p)
+            refs.append(y.T)
+        return metrics.micro_f1(refs=refs, predicts=predicts, accuracy=False)
 
     def total_cost(self, data, lmbda, convert=False):
         """Return the total cost for the data set ``data``.  The flag
@@ -263,26 +250,35 @@ if __name__ == "__main__":
     import time
     from utils import toy_loader
     from sklearn import preprocessing
+    from utils.plotters import show_curves
 
-    feature_dim = 3
+    feature_dim = 2
     n_classes = 2
     train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
                                                                   scaler=preprocessing.StandardScaler())
     print("Toy data is loaded...")
-    epochs = 10
+    epochs = 100
     mini_batch = 5
-    learn_rate = 0.1
+    learn_rate = 0.01
     architecture = [feature_dim, n_classes]
     net = MatrixNetwork(architecture)
     # training
     start_time = time.time()
-    eval_cost, eval_acc, tr_cost, tr_acc = net.SGD(train_data, epochs, mini_batch,
-                                                   learn_rate, evaluation_data=validation_data,
-                                                   monitor_evaluation_cost=True,
-                                                   monitor_evaluation_accuracy=True,
-                                                   monitor_training_cost=True)
+    eval_cost, eval_acc, tr_cost, tr_acc, _ = net.SGD(train_data, epochs, mini_batch,
+                                                      learn_rate, evaluation_data=validation_data,
+                                                      monitor_evaluation_cost=True,
+                                                      monitor_evaluation_accuracy=True,
+                                                      monitor_training_cost=True,
+                                                      monitor_training_accuracy=True)
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
-    print(eval_acc)
     print(eval_cost[-1])  # 0.05727
     print(tr_cost[-1])  # 0.07007
+    show_curves([eval_cost, tr_cost],
+                legend=["evaluation cost", "training cost"],
+                labels=["# of epochs", "value"],
+                title="MSE cost function")
+    show_curves([eval_acc, tr_acc],
+                legend=["evaluation acc", "training acc"],
+                labels=["# of epochs", "value, %"],
+                title="Micro F1 value, sigmoid scores")

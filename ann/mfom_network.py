@@ -14,6 +14,7 @@ import json
 import numpy as np
 from functions import metrics
 import ann.cost_functions as cf
+import copy
 
 np.random.seed(777)
 random.seed(777)
@@ -25,21 +26,14 @@ class MFoMNetwork(object):
         self.sizes = sizes
         self.alpha = alpha
         self.beta = beta
+        # for discrete mF1
+        self.threshold = 0.5
         # random weights and bias initialization
         self.default_weight_initializer()
         self.cost = cost
         if self.cost == cf.MFoMCost:
             self.cost.alpha = alpha
             self.cost.beta = beta
-
-        # for discrete mF1
-        self.threshold = 0.5
-        # self.num_positive_lbls = 0
-        # self.correct = 0
-        # self.false_alarm = 0
-        # for smooth mF1
-        # self.smooth_correct = 0.0
-        # self.smooth_false_alarm = 0.0
 
     def default_weight_initializer(self):
         # rows = #_of_samples, columns = dim
@@ -64,6 +58,7 @@ class MFoMNetwork(object):
     def SGD(self, training_data, epochs, mini_batch_size, eta,
             lmbda=0.0,
             evaluation_data=None,
+            is_list_weights=False,
             monitor_evaluation_cost=False,
             monitor_evaluation_accuracy=False,
             monitor_training_cost=False,
@@ -77,6 +72,7 @@ class MFoMNetwork(object):
         n = len(training_data)
         evaluation_cost, evaluation_accuracy = [], []
         training_cost, training_accuracy = [], []
+        list_weights = []
         for j in xrange(epochs):
             random.shuffle(training_data)
             data_batches, label_batches = create_minibatches(training_data, mini_batch_size)
@@ -84,7 +80,9 @@ class MFoMNetwork(object):
                 self._update_mini_batch(X, Y, eta,
                                         lmbda, len(training_data))
             print "Epoch %s training complete" % j
-
+            # save network weights optimization, e.g. in order to plot
+            if is_list_weights:
+                list_weights.append(copy.deepcopy(self.weights))
             # monitoring
             if monitor_training_cost:
                 cost = self.total_cost(training_data, lmbda)
@@ -106,7 +104,7 @@ class MFoMNetwork(object):
                     format(accuracy)
             print
         return evaluation_cost, evaluation_accuracy, \
-               training_cost, training_accuracy
+               training_cost, training_accuracy, list_weights
 
     def total_cost(self, data, lmbda, convert=False):
         """Return the total cost for the data set ``data``.  The flag
@@ -248,7 +246,7 @@ if __name__ == '__main__':
     from sklearn import preprocessing
     from utils.plotters import show_curves
 
-    feature_dim = 3
+    feature_dim = 2
     n_classes = 2
     train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
                                                                   scaler=preprocessing.StandardScaler())
@@ -257,10 +255,10 @@ if __name__ == '__main__':
     mini_batch = 5
     learn_rate = 0.01
     architecture = [feature_dim, n_classes]
-    net = MFoMNetwork(architecture, alpha=20.0)
+    net = MFoMNetwork(architecture, alpha=10.0)
     # training
     start_time = time.time()
-    eval_cost, eval_acc, tr_cost, tr_acc = net.SGD(train_data, epochs, mini_batch,
+    eval_cost, eval_acc, tr_cost, tr_acc, _ = net.SGD(train_data, epochs, mini_batch,
                                                    learn_rate, evaluation_data=validation_data,
                                                    monitor_evaluation_cost=True,
                                                    monitor_evaluation_accuracy=True,
@@ -276,12 +274,12 @@ if __name__ == '__main__':
                 title="MFoM smooth F1 cost")
     show_curves([eval_acc, tr_acc],
                 legend=["evaluation acc", "training acc"],
-                labels=["# of epochs", "value"],
-                title="MFoM discrete F1 cost")
+                labels=["# of epochs", "value, %"],
+                title="MFoM micro F1 cost")
 
 
     # TODO NOTICE!!!
     # + Compare sigmoid vs class loss function scores for discrete F1:
-    #    class loss scores better!!!
-    # - Compare sigmoid and MFoM networks F1, plot figures
+    #    class loss scores better and gives smooth F1 close to discrete F1!!!
+    # + Compare sigmoid and MFoM networks F1, plot figures
     # - Implement "Unit-vs-zeros" !!!

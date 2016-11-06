@@ -173,7 +173,6 @@ def step(a, threshold=0.0):
     :param a: array
     :return: array
     """
-    # TODO refactor!!!
     res = np.zeros_like(a)
     res[a < threshold] = 0
     res[a >= threshold] = 1

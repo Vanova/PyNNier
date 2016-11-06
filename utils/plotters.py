@@ -87,7 +87,7 @@ def show_curves(y, legend=None, labels=None, title=None):
     for it in y:
         plt.plot(it)
     if legend:
-        plt.legend(legend, loc='upper left')
+        plt.legend(legend, loc='upper right')
     if labels:
         plt.xlabel(labels[0], fontdict=plts.label_font)
         plt.ylabel(labels[1], fontdict=plts.label_font)

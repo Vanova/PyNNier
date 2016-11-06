@@ -4,7 +4,6 @@ Based on Michael Nielsen
 """
 
 import json
-import sys
 import random
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -12,17 +11,19 @@ from functions import metrics
 import cost_functions as cf
 import copy
 
+np.random.seed(777)
+random.seed(777)
+
 class Network(object):
-    def __init__(self, sizes, ):
+    def __init__(self, sizes, threshold_f1=0.5):
         """
         :param sizes: list contains the number of neurons in the respective
         layers of the network, e.g. [2, 3, 1].
         """
         self.num_layers = len(sizes)
         self.sizes = sizes
-        self.threshold_f1 = 0.5
+        self.threshold_f1 = threshold_f1
         # random weights and bias initialization
-        np.random.seed(888)
         self.default_weight_initializer()
         self.eval_err_progress = []
         self.loss_tr_progress = []
@@ -195,28 +196,62 @@ def load(filename):
 
 
 if __name__ == '__main__':
-    import time
-    from utils import mnist_loader
+    # import time
+    # from utils import mnist_loader
+    #
+    # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+    # print("MNIST data is loaded...")
+    # epochs = 10
+    # mini_batch = 10
+    # learn_rate = 3.0
+    # net = Network([784, 30, 10])
+    # # training
+    # start_time = time.time()
+    # f1, loss, _ = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    # end_time = time.time()
+    # print("Time: " + str(end_time - start_time))
+    # print(f1)
+    # print(loss)
+    # # save
+    # file_net = "./data/experiment/nist/nist_epo_{0}_btch_{1}_lr_{2}". \
+    #     format(epochs, mini_batch, learn_rate)
+    # net.save(file_net)
+    # # test load
+    # net2 = load(file_net)
+    # f1, loss, _ = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    # print(f1)
+    # print(loss)
 
-    training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
-    print("MNIST data is loaded...")
-    epochs = 10
-    mini_batch = 10
-    learn_rate = 3.0
-    net = Network([784, 30, 10])
+    import time
+    from utils import toy_loader
+    from sklearn import preprocessing
+    from utils.plotters import show_curves
+
+    feature_dim = 2
+    n_classes = 2
+    train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
+                                                                  scaler=preprocessing.StandardScaler())
+    print("Toy data is loaded...")
+    epochs = 100
+    mini_batch = 5
+    learn_rate = 0.01
+    architecture = [feature_dim, n_classes]
+    net = Network(architecture)
     # training
     start_time = time.time()
-    f1, loss, _ = net.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
+    f1_eval, tr_loss, _ = net.SGD(train_data, epochs, mini_batch,
+                           learn_rate, test_data=validation_data)
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
-    print(f1)
-    print(loss)
-    # save
-    file_net = "./data/experiment/nist/nist_epo_{0}_btch_{1}_lr_{2}". \
-        format(epochs, mini_batch, learn_rate)
-    net.save(file_net)
-    # test load
-    net2 = load(file_net)
-    f1, loss, _ = net2.SGD(training_data, epochs, mini_batch, learn_rate, test_data=test_data)
-    print(f1)
-    print(loss)
+    print(f1_eval[-1])  # 3.87596899225
+    print(tr_loss[-1])  # 0.0586984883838
+    show_curves([tr_loss],
+                legend=["training loss"],
+                labels=["# of epochs", "value, %"],
+                title="MSE cost function")
+    show_curves([f1_eval],
+                legend=["evaluation acc"],
+                labels=["# of epochs", "value"],
+                title="Micro F1 value")
+
+
