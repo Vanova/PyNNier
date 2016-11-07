@@ -190,10 +190,10 @@ class MatrixNetwork(object):
             y = y.transpose()
             a = self.feedforward(x)
             if convert: y = vectorized_result(y)
-            cost += self.cost.fn(a, y) / len(data)
+            cost += self.cost.fn(a, y)
         # cost += 0.5 * (lmbda / len(data)) * \
         #         sum(np.linalg.norm(w) ** 2 for w in self.weights)
-        return cost
+        return cost / len(data)
 
     def save(self, filename):
         """Save the neural network to the file ``filename``."""

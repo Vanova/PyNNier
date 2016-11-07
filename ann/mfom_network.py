@@ -47,12 +47,14 @@ class MFoMNetwork(object):
         self.weights = [np.random.randn(x, y)
                         for x, y in zip(self.sizes[:-1], self.sizes[1:])]
 
-    def feedforward(self, a):
+    def feedforward(self, a, class_loss_scores=False):
         """
         :return: the outputs of the network only
         """
         for b, w in zip(self.biases, self.weights):
             a = cf.sigmoid(np.dot(a, w) + b)
+        if class_loss_scores:
+            a = 1.0 - cf.MFoMCost.class_loss_scores(a)
         return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -106,7 +108,7 @@ class MFoMNetwork(object):
         return evaluation_cost, evaluation_accuracy, \
                training_cost, training_accuracy, list_weights
 
-    def total_cost(self, data, lmbda, convert=False):
+    def total_cost(self, data, lmbda=0.0, convert=False):
         """Return the total cost for the data set ``data``.  The flag
         ``convert`` should be set to False if the data set is the
         training data (the usual case), and to True if the data set is
@@ -132,14 +134,14 @@ class MFoMNetwork(object):
         Input: list of tuple of ndarrays (data, label),
         label should be binary vector
         """
-        net_predicts = [self.feedforward(xy[0].T) for xy in data]
+        predicts = [self.feedforward(xy[0].T) for xy in data]
         refs = [xy[1].T for xy in data]
         if class_loss_scores:
             # TODO NOTE that class loss function indicate an error not positive label,
             # loss function inverse scores
-            net_predicts = [1.0 - self.cost.class_loss_scores(s) for s in net_predicts]
+            predicts = [1.0 - self.cost.class_loss_scores(s) for s in predicts]
         # threshold network score
-        pred_labs = [cf.step(x, self.threshold) for x in net_predicts]
+        pred_labs = [cf.step(x, self.threshold) for x in predicts]
         return metrics.micro_f1(refs, pred_labs, False)
 
     def _update_mini_batch(self, data_batch, labs_batch, eta, lmbda, n):
@@ -259,11 +261,11 @@ if __name__ == '__main__':
     # training
     start_time = time.time()
     eval_cost, eval_acc, tr_cost, tr_acc, _ = net.SGD(train_data, epochs, mini_batch,
-                                                   learn_rate, evaluation_data=validation_data,
-                                                   monitor_evaluation_cost=True,
-                                                   monitor_evaluation_accuracy=True,
-                                                   monitor_training_cost=True,
-                                                   monitor_training_accuracy=True)
+                                                      learn_rate, evaluation_data=validation_data,
+                                                      monitor_evaluation_cost=True,
+                                                      monitor_evaluation_accuracy=True,
+                                                      monitor_training_cost=True,
+                                                      monitor_training_accuracy=True)
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
     print(eval_cost[-1])  # 13.5709565622

@@ -186,18 +186,18 @@ class NetworkVisualiser:
             opt_c = network.total_cost(zip(xvec.T, yvec.T), lmbda=0.0)
             ax.scatter(opt_weights[-1][id_layer][0, i], opt_weights[-1][id_layer][1, i], opt_c,
                        c='red', s=100, marker='*', zorder=2)
+            print opt_weights[-1][id_layer][0, i], opt_weights[-1][id_layer][1, i], opt_c
             # surface projection of cost function
             ax = fig.add_subplot(2, neurons, (i + 1) + neurons)
             cntr = contour_view(ax, ws1, ws2, cost_ws, xlim, ylim, axis_labs)
             # weights on 2D projection
             for ww in opt_weights:
-                ax.scatter(ww[id_layer][i, 0], ww[id_layer][i, 1], c='g', s=50, edgecolor='g', marker='.')
-            ax.scatter(opt_weights[-1][id_layer][i, 0], opt_weights[-1][id_layer][i, 1], c='red', s=100, marker='*')
+                ax.scatter(ww[id_layer][0, i], ww[id_layer][1, i], c='g', s=50, edgecolor='g', marker='.')
+            ax.scatter(opt_weights[-1][id_layer][0, i], opt_weights[-1][id_layer][1, i], c='red', s=100, marker='*')
 
             fig.colorbar(cntr, **self._color_bar_settings)
         plt.suptitle(title, fontdict=plts.title_font)
         plt.show()
-        # TODO 3D weights case
 
     def _decision_grid(self, xlim, ylim, network, neuron_id):
         xs1 = np.linspace(*xlim, num=self.n_grid_dots)
