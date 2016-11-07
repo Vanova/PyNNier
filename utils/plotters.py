@@ -172,11 +172,13 @@ class NetworkVisualiser:
             # optimisation weights on the 3D surface
             for ww in opt_weights:
                 network.weights = copy.deepcopy(ww)
-                opt_c = network.cost_value(network.feedforward(xvec), yvec)
+                p = network.feedforward(xvec.T)
+                opt_c = network.total_cost(zip(p, yvec.T), lmbda=0.0)
                 ax.scatter(ww[id_layer][i, 0], ww[id_layer][i, 1], opt_c, c='g', s=50, edgecolor='g', marker='.',
                            zorder=2)
             network.weights = copy.deepcopy(opt_weights[-1])
-            opt_c = network.cost_value(network.feedforward(xvec), yvec)
+            p = network.feedforward(xvec.T)
+            opt_c = network.total_cost(zip(p, yvec.T), lmbda=0.0)
             ax.scatter(opt_weights[-1][id_layer][i, 0], opt_weights[-1][id_layer][i, 1], opt_c,
                        c='red', s=100, marker='*', zorder=2)
 
@@ -201,8 +203,8 @@ class NetworkVisualiser:
         class_surface = np.zeros((self.n_grid_dots, self.n_grid_dots))
         for i in range(self.n_grid_dots):
             xy = np.array([xx[i], yy[i]])
-            pred = network.feedforward(xy)
-            class_surface[i] = pred[neuron_id]
+            pred = network.feedforward(xy.T)
+            class_surface[i] = pred.T[neuron_id]
         return xx, yy, class_surface
 
     def _cost_surface_grid(self, xlim, ylim, network, data, labels, layer, neuron_id):
@@ -215,7 +217,8 @@ class NetworkVisualiser:
         for i in range(self.n_grid_dots):
             for j in range(self.n_grid_dots):
                 network.weights[layer][neuron_id] = np.array([ws1[i, j], ws2[i, j]])
-                cost_ws[i, j] = network.cost_value(network.feedforward(data), labels)
+                p = network.feedforward(data.T)
+                cost_ws[i, j] = network.total_cost(zip(p, labels.T), lmbda=0.0)
         # TODO copy back optimal weights to network
         network.weights = copy.deepcopy(self.optimal_weight)
         return ws1, ws2, cost_ws

@@ -5,6 +5,7 @@ from utils import toy_loader
 from sklearn import preprocessing
 import utils.plotters as viz
 from ann import network
+from ann import matrix_network
 from ann import mfom_network
 
 np.random.seed(777)
@@ -78,14 +79,33 @@ epochs = 100
 mini_batch = 5
 learn_rate = 0.1
 architecture = [feature_dim, 2]
-mse_network = network.Network(architecture)
+mse_network = matrix_network.MatrixNetwork(architecture)
 # Train the network
-eval, train_loss, list_ws = mse_network.SGD(train_data, epochs, mini_batch, learn_rate,
-                                            test_data=test_data, is_list_weights=True)
-print("mF1 on test set: {0}".format(eval[-1]))
-print("MSE loss: {0}".format(train_loss[-1]))
+# eval, train_loss, list_ws = mse_network.SGD(train_data, epochs, mini_batch, learn_rate,
+#                                             test_data=test_data, is_list_weights=True)
+# print("mF1 on test set: {0}".format(eval[-1]))
+# print("MSE loss: {0}".format(train_loss[-1]))
+# print("Network optimal weights:")
+# print(mse_network.weights[-1])
+eval_cost, eval_acc, tr_cost, tr_acc, list_ws = mse_network.SGD(train_data, epochs, mini_batch,
+                                                      learn_rate, evaluation_data=test_data,
+                                                      is_list_weights=True,
+                                                      monitor_evaluation_cost=True,
+                                                      monitor_evaluation_accuracy=True,
+                                                      monitor_training_cost=True,
+                                                      monitor_training_accuracy=True)
+print("test mF1: {0}".format(eval_cost[-1]))
+print("train MSE loss: {0}".format(tr_cost[-1]))
 print("Network optimal weights:")
 print(mse_network.weights[-1])
+viz.show_curves([eval_cost, tr_cost],
+            legend=["evaluation cost", "training cost"],
+            labels=["# of epochs", "value"],
+            title="MSE cost function")
+viz.show_curves([eval_acc, tr_acc],
+            legend=["evaluation acc", "training acc"],
+            labels=["# of epochs", "value, %"],
+            title="Micro F1 value, sigmoid scores")
 ###
 # Visualize the optimized network
 ###
@@ -93,11 +113,11 @@ net_viz = viz.NetworkVisualiser(mse_network)
 # visualize network classification decisions
 net_viz.plot_decision_boundaries(mse_network, train_data, xlim=[-4, 4], ylim=[-4, 4],
                                  title="Decision surface")
-net_viz.plot_neurons_cost_surface(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
-                                  title="The MSE error surface")
-net_viz.plot_network_optimisation(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
-                                  opt_weights=list_ws,
-                                  title="The MSE cost optimization")
+# net_viz.plot_neurons_cost_surface(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
+#                                   title="The MSE error surface")
+# net_viz.plot_network_optimisation(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
+#                                   opt_weights=list_ws,
+#                                   title="The MSE cost optimization")
 
 file_net = os.path.join(DATA_PATH, "toy_mse_epo_{}_btch_{}_lr_{}".
                         format(epochs, mini_batch, learn_rate))

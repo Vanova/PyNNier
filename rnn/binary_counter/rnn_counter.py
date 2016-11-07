@@ -134,11 +134,11 @@ def gradient_check(X, Y, net):
         # + eps
         params[p_idx] += eps
         net.W = params
-        plus_cost = net.cost_value(net.feedforward(X)[:, -1], Y)
+        plus_cost = net.total_cost(net.feedforward(X)[:, -1], Y)
         # - eps
         params[p_idx] -= 2 * eps
         net.W = params
-        minus_cost = net.cost_value(net.feedforward(X)[:, -1], Y)
+        minus_cost = net.total_cost(net.feedforward(X)[:, -1], Y)
         # reset param value
         params[p_idx] += eps
         # calculate numerical gradient

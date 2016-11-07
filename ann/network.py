@@ -121,7 +121,7 @@ class Network(object):
             zs.append(z)
             activation = cf.sigmoid(z)
             activations.append(activation)
-        loss = self.cost_value(activations[-1], y)
+        loss = self.total_cost(activations[-1], y)
         # backward pass
         delta = self.cost_derivative(activations[-1], y) * cf.sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
@@ -166,7 +166,7 @@ class Network(object):
         \partial a for the output activations."""
         return (output_activations - y)
 
-    def cost_value(self, output_activations, y):
+    def total_cost(self, output_activations, y):
         """Return the MSE loss function value between
          the network output and target label y."""
         return mean_squared_error(y_true=y, y_pred=output_activations)
