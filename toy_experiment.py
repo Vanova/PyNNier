@@ -18,24 +18,20 @@ SET_TITLES = ['Training set',
 
 
 def plot_toy_data(data_list, titles, feature_dim):
-    # TODO feat dim 2D or 3D
-    # num_set = len(data_list)
-    # dim = data_list[0].shape(0)
+    fig = plt.figure(figsize=plt.figaspect(0.5))
     if feature_dim == 2:
-        fig, _ = plt.subplots(nrows=1, ncols=len(data_list),
-                              sharex='row', sharey='row', figsize=(15, 6))
-        for i, ax in enumerate(fig.axes):
+        for i, data in enumerate(data_list):
+            ax = fig.add_subplot(1, len(data_list), i + 1)
             ax.set_title(titles[i])
-            tr_x, tr_y = toy_loader.plot_format(data_list[i])
-            viz.plot_2d_scatter(ax, tr_x, tr_y)
+            data_x, data_y = toy_loader.plot_format(data)
+            viz.plot_2d_scatter(ax, data_x, data_y)
         plt.show()
     if feature_dim == 3:
-        fig = plt.figure(figsize=(12, 5))
-        for i in xrange(len(data_list)):
+        for i, data in enumerate(data_list):
             ax = fig.add_subplot(1, len(data_list), i + 1, projection='3d')
             ax.set_title(titles[i])
-            tr_x, tr_y = toy_loader.plot_format(data_list[i])
-            viz.plot_3d_scatter(ax, tr_x, tr_y)
+            data_x, data_y = toy_loader.plot_format(data)
+            viz.plot_3d_scatter(ax, data_x, data_y)
         plt.show()
     if feature_dim > 3:
         print("Not implemented...")
@@ -65,7 +61,7 @@ def data_stats(data):
 # Prepare data and plot data scatter distribution
 #####
 feature_dim = 2
-train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
+train_data, dev_data, test_data = toy_loader.load_data(n_tr=25, n_dev=5, n_tst=5,
                                                        n_features=feature_dim, n_classes=2,
                                                        scaler=preprocessing.StandardScaler())
 plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)

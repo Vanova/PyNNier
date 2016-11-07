@@ -32,11 +32,16 @@ def plot_2d_scatter(ax, x, y):
     # take data points by the color
     id_lbl = (y * [1, 2]).sum(axis=1)
     colors = COLORS.take(id_lbl)
-    # POINT_STYLES.take([1, 2, 0, 2, 1, 1], axis=0)
+    legend_item = []
     for c, m in zip(COLORS, MARKERS):
         xr = x[np.where(colors == c)]  # take class by color
         if len(xr):
-            ax.scatter(xr[:, 0], xr[:, 1], color=c, marker=m, edgecolor='black')
+            it = ax.scatter(xr[:, 0], xr[:, 1], color=c, marker=m, edgecolor='black')
+            legend_item.append(it)
+    # legend
+    legend_labs = ['label [1, 0]', 'label [0, 1]', 'label [1, 1]']
+    plt.legend(legend_item, legend_labs, title="Dot labels",
+               scatterpoints=1, loc='upper right')
 
 
 def plot_hyperplane(ax, clf, min_x, max_x, linestyle, label):
