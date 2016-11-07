@@ -84,6 +84,7 @@ class MatrixNetwork(object):
             print "Epoch %s training complete" % j
             # save network weights optimization, e.g. in order to plot
             if is_list_weights:
+                # TODO append biases as well
                 list_weights.append(copy.deepcopy(self.weights))
             # monitoring
             if monitor_training_cost:

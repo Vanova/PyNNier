@@ -61,7 +61,7 @@ def data_stats(data):
 # Prepare data and plot data scatter distribution
 #####
 feature_dim = 2
-train_data, dev_data, test_data = toy_loader.load_data(n_tr=25, n_dev=5, n_tst=5,
+train_data, dev_data, test_data = toy_loader.load_data(n_tr=250, n_dev=50, n_tst=50,
                                                        n_features=feature_dim, n_classes=2,
                                                        scaler=preprocessing.StandardScaler())
 plot_toy_data([train_data, dev_data, test_data], SET_TITLES, feature_dim)
@@ -107,13 +107,13 @@ viz.show_curves([eval_acc, tr_acc],
 ###
 net_viz = viz.NetworkVisualiser(mse_network)
 # visualize network classification decisions
-net_viz.plot_decision_boundaries(mse_network, train_data, xlim=[-4, 4], ylim=[-4, 4],
-                                 title="Decision surface")
-# net_viz.plot_neurons_cost_surface(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
-#                                   title="The MSE error surface")
-# net_viz.plot_network_optimisation(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
-#                                   opt_weights=list_ws,
-#                                   title="The MSE cost optimization")
+# net_viz.plot_decision_boundaries(mse_network, train_data, xlim=[-4, 4], ylim=[-4, 4],
+#                                  title="Decision surface")
+net_viz.plot_neurons_cost_surface(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
+                                  title="The MSE error surface")
+net_viz.plot_network_optimisation(mse_network, train_data, xlim=[-5, 5], ylim=[-5, 5],
+                                  opt_weights=list_ws,
+                                  title="The MSE cost optimization")
 
 file_net = os.path.join(DATA_PATH, "toy_mse_epo_{}_btch_{}_lr_{}".
                         format(epochs, mini_batch, learn_rate))

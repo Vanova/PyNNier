@@ -28,7 +28,7 @@ POINT_STYLES = np.array([('#FF3333', '^'),
                          ('#4DBD33', 'o')])
 
 
-def plot_2d_scatter(ax, x, y):
+def plot_2d_scatter(ax, x, y, title=None):
     # take data points by the color
     id_lbl = (y * [1, 2]).sum(axis=1)
     colors = COLORS.take(id_lbl)
@@ -38,10 +38,11 @@ def plot_2d_scatter(ax, x, y):
         if len(xr):
             it = ax.scatter(xr[:, 0], xr[:, 1], color=c, marker=m, edgecolor='black')
             legend_item.append(it)
-    # legend
-    legend_labs = ['label [1, 0]', 'label [0, 1]', 'label [1, 1]']
-    plt.legend(legend_item, legend_labs, title="Dot labels",
+    legend_labs = ['[1, 0]', '[0, 1]', '[1, 1]']
+    plt.legend(legend_item, legend_labs, title="Point labels",
                scatterpoints=1, loc='upper right')
+    if title:
+        plt.title(title)
 
 
 def plot_hyperplane(ax, clf, min_x, max_x, linestyle, label):
@@ -111,11 +112,11 @@ class NetworkVisualiser:
     _color_bar_settings = {'ticks': np.linspace(0, 1, 9), 'format': '%.1f'}
 
     def __init__(self, network):
-        self.optimal_weight = copy.deepcopy(network.weights)
+        self.network_optimal_weight = copy.deepcopy(network.weights)
         self.n_grid_dots = 30
 
     def plot_neurons_cost_surface(self, network, data, xlim, ylim, fun_name="$E$", title="Cost function surface"):
-        # TODO Data vectorisation
+        # TODO fix the data matrix orientation
         smps, labs = map(list, zip(*data))
         smps_vec = np.array([s.flatten() for s in smps]).T
         labs_vec = np.array([s.flatten() for s in labs]).T
@@ -128,7 +129,7 @@ class NetworkVisualiser:
         for i in xrange(neurons):
             ws1, ws2, cost_ws = self._cost_surface_grid(xlim, ylim, network, smps_vec, labs_vec, id_layer, i)
             ax = fig.add_subplot(2, neurons, i + 1, projection='3d')
-            axis_labs = ["$w_{%d1}$" % (i + 1), "$w_{%d2}$" % (i + 1), fun_name]
+            axis_labs = ["$w_{1%d}$" % (i + 1), "$w_{2%d}$" % (i + 1), fun_name]
             surface_view(ax, ws1, ws2, cost_ws, xlim, ylim, axis_labs)
             # surface projection
             ax = fig.add_subplot(2, neurons, (i + 1) + neurons)
@@ -148,6 +149,7 @@ class NetworkVisualiser:
             xx, yy, class_score = self._decision_grid(xlim, ylim, network, n)
             # Decision plane
             ax = fig.add_subplot(1, neurons, n + 1)
+            ax.set_title("Neuron {}".format(n + 1))
             axis_labs = ["$x$", "$y$"]
             cntr = contour_view(ax, xx, yy, class_score, xlim, ylim, axis_labs, grid=False)
             # Data scatter plot
@@ -171,22 +173,19 @@ class NetworkVisualiser:
             ws1, ws2, cost_ws = self._cost_surface_grid(xlim, ylim, network, xvec, yvec, id_layer, i)
             # plot overview of cost function
             ax = fig.add_subplot(2, neurons, i + 1, projection='3d')
-            axis_labs = ["$w_{%d1}$" % (i + 1), "$w_{%d2}$" % (i + 1), fun_name]
+            axis_labs = ["$w_{1%d}$" % (i + 1), "$w_{2%d}$" % (i + 1), fun_name]
+            ax.set_title("Neuron {}".format(i + 1))
             surface_view(ax, ws1, ws2, cost_ws, xlim, ylim, axis_labs)
-
             # optimisation weights on the 3D surface
             for ww in opt_weights:
                 network.weights = copy.deepcopy(ww)
-                p = network.feedforward(xvec.T)
-                opt_c = network.total_cost(zip(p, yvec.T), lmbda=0.0)
-                ax.scatter(ww[id_layer][i, 0], ww[id_layer][i, 1], opt_c, c='g', s=50, edgecolor='g', marker='.',
+                opt_c = network.total_cost(zip(xvec.T, yvec.T), lmbda=0.0)
+                ax.scatter(ww[id_layer][0, i], ww[id_layer][1, i], opt_c, c='g', s=50, edgecolor='g', marker='.',
                            zorder=2)
             network.weights = copy.deepcopy(opt_weights[-1])
-            p = network.feedforward(xvec.T)
-            opt_c = network.total_cost(zip(p, yvec.T), lmbda=0.0)
-            ax.scatter(opt_weights[-1][id_layer][i, 0], opt_weights[-1][id_layer][i, 1], opt_c,
+            opt_c = network.total_cost(zip(xvec.T, yvec.T), lmbda=0.0)
+            ax.scatter(opt_weights[-1][id_layer][0, i], opt_weights[-1][id_layer][1, i], opt_c,
                        c='red', s=100, marker='*', zorder=2)
-
             # surface projection of cost function
             ax = fig.add_subplot(2, neurons, (i + 1) + neurons)
             cntr = contour_view(ax, ws1, ws2, cost_ws, xlim, ylim, axis_labs)
@@ -221,9 +220,9 @@ class NetworkVisualiser:
         # Fill the cost matrix for each combination of weights
         for i in range(self.n_grid_dots):
             for j in range(self.n_grid_dots):
-                network.weights[layer][neuron_id] = np.array([ws1[i, j], ws2[i, j]])
-                p = network.feedforward(data.T)
-                cost_ws[i, j] = network.total_cost(zip(p, labels.T), lmbda=0.0)
+                network.weights[layer][:, neuron_id] = np.array([ws1[i, j], ws2[i, j]])
+                # p = network.feedforward(data.T)
+                cost_ws[i, j] = network.total_cost(zip(data.T, labels.T), lmbda=0.0)
         # TODO copy back optimal weights to network
-        network.weights = copy.deepcopy(self.optimal_weight)
+        network.weights = copy.deepcopy(self.network_optimal_weight)
         return ws1, ws2, cost_ws
