@@ -31,9 +31,9 @@ class MFoMNetwork(object):
         # random weights and bias initialization
         self.default_weight_initializer()
         self.cost = cost
-        if self.cost == cf.MFoMCost:
-            self.cost.alpha = alpha
-            self.cost.beta = beta
+        # if self.cost == cf.MFoMCost:
+        self.cost.alpha = alpha
+        self.cost.beta = beta
 
     def default_weight_initializer(self):
         # rows = #_of_samples, columns = dim
@@ -257,19 +257,21 @@ if __name__ == '__main__':
     mini_batch = 5
     learn_rate = 0.01
     architecture = [feature_dim, n_classes]
-    net = MFoMNetwork(architecture, alpha=10.0)
+    net = MFoMNetwork(architecture, alpha=50.0, beta=0.0)
     # training
     start_time = time.time()
     eval_cost, eval_acc, tr_cost, tr_acc, _ = net.SGD(train_data, epochs, mini_batch,
-                                                      learn_rate, evaluation_data=validation_data,
+                                                      learn_rate, evaluation_data=test_data,
                                                       monitor_evaluation_cost=True,
                                                       monitor_evaluation_accuracy=True,
                                                       monitor_training_cost=True,
                                                       monitor_training_accuracy=True)
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
-    print(eval_cost[-1])  # 13.5709565622
-    print(tr_cost[-1])  # 16.2268688151
+    print(eval_cost[-1])  # 7.99445636053
+    print(tr_cost[-1])  # 13.7286613481
+    print("F1 error test (LOSS SCORES): {}".format(net.accuracy(test_data, class_loss_scores=True)))
+    print("F1 error test (SIGMOID): {}".format(net.accuracy(test_data)))
     show_curves([eval_cost, tr_cost],
                 legend=["evaluation cost", "training cost"],
                 labels=["# of epochs", "value"],

@@ -128,8 +128,8 @@ learn_rate = 0.1
 architecture = [feature_dim, nclass]
 mfom_network = mfom_network.MFoMNetwork(architecture, alpha=10., beta=0)
 # copy MSE network weights
-# mfom_network.weights = copy.deepcopy(mse_network.weights)
-# mfom_network.biases = copy.deepcopy(mse_network.biases)
+mfom_network.weights = copy.deepcopy(mse_network.weights)
+mfom_network.biases = copy.deepcopy(mse_network.biases)
 print("Optimal train (mfom network) F1: {}".format(mfom_network.accuracy(train_data, True)))
 eval_cost, eval_acc, tr_cost, tr_acc, list_ws = mfom_network.SGD(train_data, epochs, mini_batch,
                                                                  learn_rate, evaluation_data=test_data,
