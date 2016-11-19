@@ -24,8 +24,8 @@ class MFoMNetwork(object):
     def __init__(self, sizes, alpha=10.0, beta=0.0, cost=cf.MFoMCost):
         self.num_layers = len(sizes)
         self.sizes = sizes
-        self.alpha = alpha
-        self.beta = beta
+        # self.alpha = alpha
+        # self.beta = beta
         # for discrete mF1
         self.threshold = 0.5
         # random weights and bias initialization
@@ -248,16 +248,17 @@ if __name__ == '__main__':
     from sklearn import preprocessing
     from utils.plotters import show_curves
 
-    feature_dim = 2
-    n_classes = 2
+    feature_dim = 5
+    n_classes = 3
     train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
                                                                   scaler=preprocessing.StandardScaler())
     print("Toy data is loaded...")
-    epochs = 100
+    epochs = 500
     mini_batch = 5
-    learn_rate = 0.01
+    learn_rate = 0.1
     architecture = [feature_dim, n_classes]
-    net = MFoMNetwork(architecture, alpha=50.0, beta=0.0)
+    # TODO DEBUG!!! with and without off-diag Jacobian
+    net = MFoMNetwork(architecture, alpha=1.0, beta=0.0, cost=cf.UnitsvZerosMFoMCost)
     # training
     start_time = time.time()
     eval_cost, eval_acc, tr_cost, tr_acc, _ = net.SGD(train_data, epochs, mini_batch,
