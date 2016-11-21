@@ -91,9 +91,6 @@ class MFoMCost(object):
         sum_jac = np.zeros((nsamples, nclass))
         # TODO check the sum inference of Jacobian
         # weighted jacobian on every sample
-        # for dl_smp, snorm_smp, y_smp, a_smp in zip(delta_l, norms, y, a):
-        #     sum_jac += MFoMCost.weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp,
-        #                                       npos + smooth_fp, smooth_tp)
         count = 0
         for dl_smp, snorm_smp, y_smp, a_smp in zip(delta_l, norms, y, a):
             sum_jac[count] = MFoMCost._weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp,
@@ -136,7 +133,7 @@ class MFoMCost(object):
         return np.dot(J, W.reshape((-1, 1))).T
 
 
-class UnitsvZerosMFoMCost(object):
+class UnitsvsZerosMFoMCost(object):
     alpha = 1.0
     beta = 0.0
 
@@ -147,7 +144,7 @@ class UnitsvZerosMFoMCost(object):
         :param a: network output on batch or the whole dataset, 2D array, smp x dim
         :param y: binary multi-labels, 2D array, smp x dim
         """
-        l = UnitsvZerosMFoMCost.class_loss_scores(a)
+        l = UnitsvsZerosMFoMCost.class_loss_scores(a)
         # smooth approximation
         yneg = np.logical_not(y)
         npos = (y == 1).sum()
@@ -195,7 +192,7 @@ class UnitsvZerosMFoMCost(object):
 
         # calculate class loss function l
         # d = np.log(1. / (nclass - 1) * (1. / norms - 1.) + 1e-6)
-        l = 1.0 / (1.0 + np.exp(-UnitsvZerosMFoMCost.alpha * d - UnitsvZerosMFoMCost.beta))
+        l = 1.0 / (1.0 + np.exp(-UnitsvsZerosMFoMCost.alpha * d - UnitsvsZerosMFoMCost.beta))
 
         # smooth approximation
         yneg = np.logical_not(y)
@@ -203,14 +200,14 @@ class UnitsvZerosMFoMCost(object):
         smooth_tp = np.sum((1.0 - l) * y)
 
         # Jacobian
-        delta_l = UnitsvZerosMFoMCost.alpha * l * (1.0 - l)
+        delta_l = UnitsvsZerosMFoMCost.alpha * l * (1.0 - l)
         sum_jac = np.zeros((nsamples, nclass))
         # TODO check the sum inference of Jacobian
         # weighted jacobian on every sample
         count = 0
         for dl_smp, snorm_smp, y_smp, a_smp in zip(delta_l, norms, y, a):
-            sum_jac[count] = UnitsvZerosMFoMCost._weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp,
-                                                         npos + smooth_fp, smooth_tp)
+            sum_jac[count] = UnitsvsZerosMFoMCost._weighted_jacobian(dl_smp, snorm_smp, y_smp, a_smp,
+                                                                     npos + smooth_fp, smooth_tp)
             count += 1
         return 2. * sum_jac / (smooth_fp + smooth_tp + npos) ** 2
 
@@ -227,7 +224,6 @@ class UnitsvZerosMFoMCost(object):
         # calculate class loss function l
         d = np.log(1. / (nclass - 1) * (1. / norms - 1.) + 1e-6)
         # d = -a + 0.5
-        # TODO L FUNCTION INVERSES SCORES!!!
         l = 1.0 / (1.0 + np.exp(-MFoMCost.alpha * d - MFoMCost.beta))
         # l = 1. - a  # i.e. sigmoids
         return l

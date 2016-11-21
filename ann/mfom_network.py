@@ -248,17 +248,18 @@ if __name__ == '__main__':
     from sklearn import preprocessing
     from utils.plotters import show_curves
 
-    feature_dim = 5
-    n_classes = 3
-    train_data, validation_data, test_data = toy_loader.load_data(n_features=feature_dim, n_classes=n_classes,
+    feature_dim = 10
+    n_classes = 5
+    train_data, validation_data, test_data = toy_loader.load_data(n_tr=2000, n_tst=500, n_dev=500,
+                                                                  n_features=feature_dim, n_classes=n_classes,
                                                                   scaler=preprocessing.StandardScaler())
     print("Toy data is loaded...")
     epochs = 500
     mini_batch = 5
     learn_rate = 0.1
-    architecture = [feature_dim, n_classes]
+    architecture = [feature_dim, 20, n_classes]
     # TODO DEBUG!!! with and without off-diag Jacobian
-    net = MFoMNetwork(architecture, alpha=1.0, beta=0.0, cost=cf.UnitsvZerosMFoMCost)
+    net = MFoMNetwork(architecture, alpha=10.0, beta=0.0, cost=cf.MFoMCost)
     # training
     start_time = time.time()
     eval_cost, eval_acc, tr_cost, tr_acc, _ = net.SGD(train_data, epochs, mini_batch,
@@ -269,8 +270,8 @@ if __name__ == '__main__':
                                                       monitor_training_accuracy=True)
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
-    print(eval_cost[-1])  # 7.99445636053
-    print(tr_cost[-1])  # 13.7286613481
+    print(eval_cost[-1])
+    print(tr_cost[-1])
     print("F1 error test (LOSS SCORES): {}".format(net.accuracy(test_data, class_loss_scores=True)))
     print("F1 error test (SIGMOID): {}".format(net.accuracy(test_data)))
     show_curves([eval_cost, tr_cost],
@@ -282,9 +283,36 @@ if __name__ == '__main__':
                 labels=["# of epochs", "value, %"],
                 title="MFoM micro F1 cost")
 
-
-    # TODO NOTICE!!!
-    # + Compare sigmoid vs class loss function scores for discrete F1:
-    #    class loss scores better and gives smooth F1 close to discrete F1!!!
-    # + Compare sigmoid and MFoM networks F1, plot figures
-    # - Implement "Unit-vs-zeros" !!!
+# experiment:
+# feature_dim = 10
+# n_classes = 5
+# network = [10, 20, 5]
+# data: n_tr=2000, n_tst=500, n_dev=500
+# alpha: 10
+# a) MFoM (full-diag)
+# Epoch 499 training complete
+# Cost on training data (smooth F1): 12.2135291309
+# Error rate on training data (discrete F1): 8.93362169356
+# Cost on evaluation data (smooth F1): 13.1673488413
+# Error rate on evaluation data (discrete F1): 10.4180491042
+#
+# b) MFoM (off-diag)
+# Epoch 499 training complete
+# Cost on training data (smooth F1): 14.495517596
+# Error rate on training data (discrete F1): 11.6355293346
+# Cost on evaluation data (smooth F1): 15.5214520278
+# Error rate on evaluation data (discrete F1): 12.8947368421
+#
+# c) MFoM UvZ (full-diag jacobian) TODO something crazy with smooth F1
+# Epoch 499 training complete
+# Cost on training data (smooth F1): 53.1174496688
+# Error rate on training data (discrete F1): 12.1589654629
+# Cost on evaluation data (smooth F1): 53.0366585597
+# Error rate on evaluation data (discrete F1): 12.429022082
+#
+# d) MFoM UvZ (off-diag jacobian)
+# Epoch 499 training complete
+# Cost on training data (smooth F1): 53.2560674489
+# Error rate on training data (discrete F1): 11.4615865084
+# Cost on evaluation data (smooth F1): 53.1721201449
+# Error rate on evaluation data (discrete F1): 12.030075188
