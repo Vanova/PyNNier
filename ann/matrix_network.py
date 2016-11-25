@@ -273,8 +273,9 @@ if __name__ == "__main__":
                                                       monitor_training_accuracy=True)
     end_time = time.time()
     print("Time: " + str(end_time - start_time))
-    print(eval_cost[-1])  # 0.05727
-    print(tr_cost[-1])  # 0.07007
+    print(eval_acc[-1])  # 2.36220472441
+    print(eval_cost[-1])  # 0.0521401561191
+    print(tr_cost[-1])  # 0.0554160574567
     show_curves([eval_cost, tr_cost],
                 legend=["evaluation cost", "training cost"],
                 labels=["# of epochs", "value"],

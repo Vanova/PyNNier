@@ -138,7 +138,7 @@ class NetworkVisualiser:
         plt.suptitle(title, fontdict=plts.title_font)
         plt.show()
 
-    def plot_decision_boundaries(self, network, data, xlim, ylim, title="Network decision boundary"):
+    def plot_decision(self, network, data, xlim, ylim, title="Network decision boundary"):
         """
         Plot decision boundary of every neuron
         """
