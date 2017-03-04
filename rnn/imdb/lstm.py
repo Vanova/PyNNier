@@ -137,7 +137,7 @@ def ortho_weight(ndim):
     return u.astype(config.floatX)
 
 
-def param_init_lstm(options, params, prefix='lstm'):
+def param_init_lstm(options, params, prefix='theano_nets_old'):
     """
     Init the LSTM parameter:
 
@@ -159,7 +159,7 @@ def param_init_lstm(options, params, prefix='lstm'):
     return params
 
 
-def lstm_layer(tparams, state_below, options, prefix='lstm', mask=None):
+def lstm_layer(tparams, state_below, options, prefix='theano_nets_old', mask=None):
     nsteps = state_below.shape[0]
     if state_below.ndim == 3:
         n_samples = state_below.shape[1]
@@ -207,9 +207,9 @@ def lstm_layer(tparams, state_below, options, prefix='lstm', mask=None):
     return rval[0]
 
 
-# ff: Feed Forward (normal neural net), only useful to put after lstm
+# ff: Feed Forward (normal neural net), only useful to put after theano_nets_old
 #     before the classifier.
-layers = {'lstm': (param_init_lstm, lstm_layer)}
+layers = {'theano_nets_old': (param_init_lstm, lstm_layer)}
 
 
 def sgd(lr, tparams, grads, x, mask, y, cost):
@@ -385,7 +385,7 @@ def build_model(tparams, options):
     proj = get_layer(options['encoder'])[1](tparams, emb, options,
                                             prefix=options['encoder'],
                                             mask=mask)
-    if options['encoder'] == 'lstm':
+    if options['encoder'] == 'theano_nets_old':
         proj = (proj * mask[:, :, None]).sum(axis=0)
         proj = proj / mask.sum(axis=0)[:, None]
     if options['use_dropout']:
@@ -456,7 +456,7 @@ def train_lstm(
     lrate=0.0001,  # Learning rate for sgd (not used for adadelta and rmsprop)
     n_words=10000,  # Vocabulary size
     optimizer=adadelta,  # sgd, adadelta and rmsprop available, sgd very hard to use, not recommanded (probably need momentum and decaying learning rate).
-    encoder='lstm',  # TODO: can be removed must be lstm.
+    encoder='theano_nets_old',  # TODO: can be removed must be theano_nets_old.
     saveto='lstm_model.npz',  # The best model will be saved there
     validFreq=370,  # Compute the validation error after this number of update.
     saveFreq=1110,  # Save the parameters after every saveFreq updates

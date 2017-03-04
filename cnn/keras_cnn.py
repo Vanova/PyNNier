@@ -16,7 +16,7 @@ from keras.layers import Convolution2D, MaxPooling2D
 from keras.utils import np_utils
 from keras import backend as K
 
-batch_size = 128
+batch_size = 256
 nb_classes = 10
 nb_epoch = 12
 
@@ -25,7 +25,7 @@ img_rows, img_cols = 28, 28
 # number of convolutional filters to use
 nb_filters = 32
 # size of pooling area for max pooling
-pool_size = (2, 2)
+pool_size = (3, 3)
 # convolution kernel size
 kernel_size = (3, 3)
 
@@ -54,14 +54,22 @@ Y_train = np_utils.to_categorical(y_train, nb_classes)
 Y_test = np_utils.to_categorical(y_test, nb_classes)
 
 model = Sequential()
-
+# NOTE: the equation for the map: (width - kernel_size + 2*pad)/stride +1
+# 28 - 3 + 1 = 26
+# 28 - 3 + 1 = 26
 model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1],
                         border_mode='valid',
                         input_shape=input_shape))
 model.add(Activation('relu'))
+model.add(MaxPooling2D((3, 3), strides=(2, 2), name='convmax_1'))
+# 26 - 3 + 1 = 24
+# 26 - 3 + 1 = 24
 model.add(Convolution2D(nb_filters, kernel_size[0], kernel_size[1]))
 model.add(Activation('relu'))
-model.add(MaxPooling2D(pool_size=pool_size))
+# 24/2 = 12
+# 24/2 = 12
+# (width - kernel_size + 2*pad)/stride +1
+model.add(MaxPooling2D(pool_size=pool_size, strides=(2, 2)))
 model.add(Dropout(0.25))
 
 model.add(Flatten())
