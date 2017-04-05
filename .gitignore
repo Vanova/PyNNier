@@ -8,3 +8,7 @@
 
 # data folders
 data/
+
+# models
+*.npz
+*.h5

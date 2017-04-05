@@ -218,6 +218,7 @@ class UnitsvsZerosMFoMCost(object):
         misclassification measure
         :param a: network output signal, e.g. sigmoid scores
         """
+        # TODO fix to Units-vs-zeros!!!
         nclass = a.shape[1]
         # softmax normalization: ssigma in report
         norms = softmax(a)
