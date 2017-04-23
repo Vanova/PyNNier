@@ -12,3 +12,4 @@ data/
 # models
 *.npz
 *.h5
+*.pkl
