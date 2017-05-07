@@ -25,7 +25,6 @@ max_review_length = 500
 def train():
     # load the dataset but only keep the top n words, zero the rest
     (X_train, Y_train), (X_test, Y_test) = imdb.load_data(nb_words=top_words)
-
     # truncate and pad input sequences
     X_train = sequence.pad_sequences(X_train, maxlen=max_review_length)
     X_test = sequence.pad_sequences(X_test, maxlen=max_review_length)
