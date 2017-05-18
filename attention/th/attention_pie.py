@@ -79,7 +79,7 @@ def test_AttentionSeq2Seq():
 
 if __name__ == "__main__":
     X_train, Y_train, X_test, Y_test = prepare_mnist()
-    model = AttentionSeq2Seq(output_dim=output_dim, output_length=output_length, input_shape=(input_length, input_dim),
+    model = AttentionSeq2Seq(output_dim=output_dim, unroll=True, output_length=output_length, input_shape=(input_length, input_dim),
                              bidirectional=False)
     model.compile(loss='mse', optimizer='sgd', metrics=['accuracy'])
     # model.compile(loss='categorical_crossentropy',
