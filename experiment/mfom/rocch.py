@@ -68,4 +68,6 @@ plt.show()
 # 1. discrete ROC plot for tst scores
 # fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
 
-# 2. PAV algorithm
+# 2. PAV ROCCH algorithm
+
+# 3. smEER and EER
