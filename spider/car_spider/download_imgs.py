@@ -67,13 +67,12 @@ def check_dir(dir):
         os.makedirs(dir)
 
 
-def main(at_once=100):
-    p = Pool()
+def main(at_once=500):
+    p = Pool(at_once)
     # file detailing what to download
     # each line should be of format:
     # fileType, color, brand, model, url, hash
     fname = sys.argv[1]
-
     # get listing of files to download
     task_list = read_tasking(fname)
     print('processed {0} lines to download'.format(len(task_list)))

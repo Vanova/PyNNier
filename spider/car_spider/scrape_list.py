@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 import config as cfg
 
+
 def get_car(color, brand, model, num, out_file, out_error):
     """
     For a specific make model and color of car attempt to get 'num' images
@@ -25,6 +26,7 @@ def get_car(color, brand, model, num, out_file, out_error):
         # TODO check color of the cars and num
         soup = get_soup(url, header)
         actual_images = []
+        # parse all photo urls
         for a in soup.find_all('div', {'class': 'rg_meta'}):
             link, link_type = json.loads(a.text)['ou'], json.loads(a.text)['ity']
             actual_images.append((link, link_type))

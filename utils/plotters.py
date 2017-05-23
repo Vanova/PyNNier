@@ -1,5 +1,6 @@
 from mpl_toolkits.mplot3d import axes3d
 import copy
+import matplotlib as mpl
 import numpy as np
 from matplotlib import cm
 import matplotlib.pyplot as plt
@@ -26,6 +27,20 @@ MARKERS = np.array(['!',
 POINT_STYLES = np.array([('#FF3333', '^'),
                          ('#0198E1', 'v'),
                          ('#4DBD33', 'o')])
+
+
+def colored_table(ax, vals, row_lab, col_lab):
+    """
+    Plot colored table
+    ax: axis of fig.add_subplot(...)
+    vals: 2D array, numpy.ndarray
+    row_lab: list of row indices
+    col_lab: list of column indices
+    """
+    normal = mpl.colors.Normalize(vmin=vals.min() - .2, vmax=vals.max() + .2)
+    ax.table(cellText=vals, rowLabels=row_lab, colLabels=col_lab,
+             colWidths=[0.03] * vals.shape[1],
+             cellColours=plt.cm.coolwarm(normal(vals)), alpha=0.5, loc='left')
 
 
 def plot_2d_scatter(ax, x, y, title=None):
