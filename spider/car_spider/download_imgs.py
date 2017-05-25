@@ -21,8 +21,8 @@ def read_tasking(fname):
         task = task.strip()
         task = json.loads(task)
         myf = Path(task['filename'])
-        # check if file exist
         if not myf.is_file():
+            # check
             task_list.append(task)
     tasking.close()
     return task_list
