@@ -65,14 +65,14 @@ def class_wise_tnt(p, y):
 def pooled_tnt(p, y):
     """
     Split only targets and only non-target scores across all classes
-    :return: target DataFrame, non-target DataFrame
+    :return: target and non-target 1D arrays
     """
     ts_pool = []
     nts_pool = []
     for c in y.columns:
         ts_pool.extend(p[c][y[c] > 0].values)
         nts_pool.extend(p[c][y[c] < 1].values)
-    return ts_pool, nts_pool
+    return np.array(ts_pool), np.array(nts_pool)
 
 
 def pooled_scores(p, y):
