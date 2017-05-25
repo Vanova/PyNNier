@@ -21,6 +21,7 @@ def read_tasking(fname):
         task = task.strip()
         task = json.loads(task)
         myf = Path(task['filename'])
+        # check if file exist
         if not myf.is_file():
             task_list.append(task)
     tasking.close()
@@ -67,8 +68,8 @@ def check_dir(dir):
         os.makedirs(dir)
 
 
-def main(at_once=500):
-    p = Pool(at_once)
+def main(at_once=100):
+    p = Pool()
     # file detailing what to download
     # each line should be of format:
     # fileType, color, brand, model, url, hash

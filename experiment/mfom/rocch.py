@@ -4,62 +4,55 @@ and EER from these plots
 """
 
 from matplotlib import pyplot as plt
-from pandas import *
-import pandas as pd
+import matplotlib.mlab as mlab
 from pandas.plotting import scatter_matrix
+from scipy.stats import norm
+import plotter
+import toy_scores as TS
 import numpy as np
-import plotters
-from sklearn import metrics
+import pandas as pd
 
-# test scores
-p_test = np.array([[0.6, 0.8, 0.7, 0.9],
-                   [0.7, 0.2, 0.3, 0.4],
-                   [0.1, 0.4, 0.3, 0.0],
-                   [0.6, 0.2, 0.1, 0.3],
-                   [0.7, 0.8, 0.6, 0.9],
-                   [0.0, 0.3, 0.7, 0.4],
-                   [0.1, 0.8, 0.9, 0.3],
-                   [0.2, 0.6, 0.1, 0.3],
-                   [0.6, 0.9, 0.6, 0.3],
-                   [0.1, 0.3, 0.4, 0.2]])
-# ground-truth
-y_test = np.array([[1, 1, 1, 1],
-                   [0, 0, 0, 1],
-                   [1, 0, 0, 0],
-                   [1, 1, 1, 1],
-                   [0, 0, 1, 1],
-                   [0, 1, 1, 0],
-                   [0, 1, 1, 1],
-                   [1, 0, 0, 1],
-                   [1, 1, 1, 1],
-                   [0, 0, 1, 0]])
+# load scores
+P_df = TS.arr2DataFrame(TS.p_test)
+Y_df = TS.arr2DataFrame(TS.y_test)
 
-idx = Index(range(p_test.shape[0]))
-p_test = DataFrame(p_test, index=idx, columns=['C_1', 'C_2', 'C_3', 'C_4'])
-y_test = DataFrame(y_test, index=idx, columns=['C_1', 'C_2', 'C_3', 'C_4'])
-
+# Score table
 fig = plt.figure(figsize=plt.figaspect(0.5))
-ax = fig.add_subplot(2, 1, 1, xticks=[], yticks=[], frameon=False, )
-plotters.colored_table(ax, vals=p_test.values, col_lab=p_test.columns, row_lab=p_test.index)
+ax = fig.add_subplot(2, 1, 1, xticks=[], yticks=[], frameon=False)
+plotter.colored_table(ax, vals=P_df.values, col_lab=Y_df.columns, row_lab=P_df.index)
 
 ax = fig.add_subplot(2, 1, 2, xticks=[], yticks=[], frameon=False)
-plotters.colored_table(ax, vals=y_test.values, col_lab=y_test.columns, row_lab=y_test.index)
+plotter.colored_table(ax, vals=Y_df.values, col_lab=Y_df.columns, row_lab=Y_df.index)
 plt.show()
 
-# Distributions
-# df = pd.DataFrame(np.array(s_test), columns=['C_1', 'C_2', 'C_3', 'C_4'])
-scatter_matrix(p_test, alpha=0.2, figsize=(6, 6), diagonal='kde')
-
-# histograms plot
-df4 = pd.DataFrame({'C_1_1': p_test['C_1'][y_test['C_1'] > 0].values, 'C_1_0': p_test['C_1'][y_test['C_1'] < 1].values}, columns=['C_1_0', 'C_1_1'])
-df4.plot.hist(alpha=0.5, bins=10)
+# Scatter distributions
+scatter_matrix(P_df, alpha=0.5, figsize=(6, 6), diagonal='kde')
 plt.show()
 
-# import dcase_scores
+# Histograms plots
+ts, nts = TS.class_wise_tnt(p=P_df, y=Y_df)
 
-# truth_sc = dcase_scores.read_dcase_scores()
-# eval_sc = dcase_scores.read_dcase_scores()
+fig = plt.figure(figsize=plt.figaspect(0.5))
+bins = 10
+for c in range(len(ts)):
+    ax = fig.add_subplot(2, 2, c+1, frameon=True)
+    n1, bins1, pat1 = ax.hist(ts[c].values, label=ts[c].columns[0], bins=bins, alpha=0.5, color='b')
+    n2, bins2, pat2 = ax.hist(nts[c].values, label=nts[c].columns[0], bins=bins, alpha=0.5, color='g')
 
+    # add a 'best fit' line
+    x = np.linspace(0., 1., 100)
+    (mu1, s1) = norm.fit(ts[c].values)
+    y = norm.pdf(x, mu1, s1)
+    # y = mlab.normpdf(bins1, mu1, s1)
+    ax.plot(x, y, alpha=0.3, color='b')
+
+    (mu2, s2) = norm.fit(nts[c].values)
+    y = norm.pdf(x, mu2, s2)
+    ax.plot(x, y, '--', alpha=0.3, color='g')
+    ax.legend(loc='upper right')
+
+fig.tight_layout()
+plt.show()
 
 
 # ===
@@ -67,6 +60,29 @@ plt.show()
 # ===
 # scores distributions: pooled, target/non-target, FNR vs FPR
 
+# TS.pooled_scores(p=P_df, y=Y_df)
+tar_pool, ntar_pool = TS.pooled_tnt(p=P_df, y=Y_df)
+fig = plt.figure(figsize=plt.figaspect(0.5))
+bins = 5
+
+ax = fig.add_subplot(1, 1, 1, frameon=True)
+n1, bins1, pat1 = ax.hist(tar_pool, label='Target', bins=bins, alpha=0.5, color='b')
+n2, bins2, pat2 = ax.hist(ntar_pool, label='Non-target', bins=bins, alpha=0.5, color='g')
+
+# add a 'best fit' line
+# xmin, xmax = ax.get_xlim()
+x = np.linspace(0., 1., 100)
+(mu1, s1) = norm.fit(tar_pool)
+y = norm.pdf(x, mu1, s1)
+ax.plot(x, y, alpha=0.3, color='b')
+
+(mu2, s2) = norm.fit(ntar_pool)
+y = norm.pdf(x, mu2, s2)
+ax.plot(x, y, '--', alpha=0.3, color='g')
+ax.legend(loc='upper right')
+
+fig.tight_layout()
+plt.show()
 
 # ===
 # discrete (or PAV calibrated) vs smoothed MFoM scores
