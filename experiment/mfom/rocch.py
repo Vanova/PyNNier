@@ -134,9 +134,6 @@ def rocch():
 # ROC vs ROCCH
 # ===
 
-# discrete ROC plot
-# fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
-
 # convex hull ROC plot
 
 # Isotonic regression or Platt calibration
@@ -170,22 +167,49 @@ if __name__ == "__main__":
 
     # ===
     # class-wise discrete ROC plot
+    # TODO: class-wise EER
     # ===
     class_wise_roc(Y_df, P_df)
 
     # ===
     # pooled discrete ROC plot
+    # TODO: AvgEER
     # ===
     pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
     y_true = pool_sc.values[:, 1]
     y_score = pool_sc.values[:, 0]
     pooled_roc(y_true=y_true, y_score=y_score)
 
-
     # ===
     # FNR vs FPR distributions
     # ===
+    pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
+    y_true = pool_sc.values[:, 1]
+    y_score = pool_sc.values[:, 0]
 
+    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
+    roc_auc = metrics.auc(fpr, tpr)
+
+    plt.figure()
+    lw = 2
+    plt.plot(thresholds, fpr, marker='o', linestyle='--', color='green', label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot(thresholds, 1-tpr, marker='o', linestyle='--', color='blue', label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot(thresholds, np.abs(1 - tpr - fpr), marker='o', linestyle='--', color='blue', label='ROC curve (area = %0.2f)' % roc_auc)
+
+    # plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    # plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    # plt.xlim([0.0, 1.0])
+    # plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+    # ===
+    # pooled ROCCH
+    # ===
 
     # ===
     # smooth FN & FP (depend on alpha and beta) distributions and
