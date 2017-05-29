@@ -2,7 +2,6 @@ import numpy as np
 
 def micro_f1(refs, predicts, accuracy=True):
     """
-
     :param refs, predicts: binary integer list of ndarrays,
         several hot-labels
     :return: accuracy or error of micro F1

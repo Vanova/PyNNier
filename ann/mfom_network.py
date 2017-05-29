@@ -12,7 +12,7 @@ and omits many desirable features.
 import random
 import json
 import numpy as np
-from functions import metrics
+from metrics import metrics
 import ann.cost_functions as cf
 import copy
 

@@ -8,7 +8,7 @@ import random
 import sys
 import numpy as np
 import cost_functions as cf
-from functions import metrics
+from metrics import metrics
 import copy
 
 np.random.seed(777)
@@ -221,7 +221,7 @@ def load(filename):
     return net
 
 
-#### Miscellaneous functions
+#### Miscellaneous metrics
 def vectorized_result(j):
     """Return a 10-dimensional unit vector with a 1.0 in the j'th position
     and zeroes elsewhere.  This is used to convert a digit (0...9)

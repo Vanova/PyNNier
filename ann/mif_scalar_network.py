@@ -14,7 +14,7 @@ import math
 import time
 import json
 import numpy as np
-from functions import metrics
+from metrics import metrics
 import ann.cost_functions as cf
 
 

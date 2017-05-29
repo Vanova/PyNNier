@@ -7,7 +7,7 @@ import json
 import random
 import numpy as np
 from sklearn.metrics import mean_squared_error
-from functions import metrics
+from metrics import metrics
 import cost_functions as cf
 import copy
 
