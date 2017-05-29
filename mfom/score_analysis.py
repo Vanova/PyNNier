@@ -2,12 +2,14 @@
 Compare discrete and convex hull ROC computation
 and EER from these plots
 """
-
+import numpy as np
 import sklearn.metrics as metrics
 from pandas.plotting import scatter_matrix
 from scipy.stats import norm
-import plotter
-import toy_scores as TS
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+from sklearn.isotonic import IsotonicRegression
+from mfom.utils import toy_scores as TS, plotter
 
 
 def toy_score_table(p_df, y_df):
@@ -98,6 +100,10 @@ def class_wise_roc(y_true_cw, y_score_cw):
 
 
 def pooled_roc(y_true, y_score):
+    """
+    y_true:
+    y_score:
+    """
     fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
     roc_auc = metrics.auc(fpr, tpr)
 
@@ -115,7 +121,32 @@ def pooled_roc(y_true, y_score):
     plt.show()
 
 
+def pooled_fnr_fpr(y_true, y_score):
+    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
+    fpr = np.insert(fpr, 0, 0.)
+    tpr = np.insert(tpr, 0, 0.)
+    fnr = 1. - tpr
+    thresholds = np.insert(thresholds, 0, 1.)
+
+    plt.figure()
+    plt.plot(thresholds, fpr, marker='o', linestyle='--', label='FPR')
+    plt.plot(thresholds, fnr, marker='o', linestyle='--', label='FNR')
+    plt.plot(thresholds, np.abs(fnr - fpr), marker='.', linestyle=':', alpha=0.8, lw=1, label='|FNR - FPR|')
+    plt.plot(thresholds, np.abs(fnr + fpr), marker='.', linestyle=':', alpha=0.8, lw=1, label='|FNR + FPR|')
+    plt.xlabel('Thresholds')
+    plt.ylabel('Error rate')
+    plt.legend(loc="center right")
+    plt.show()
+
+
 def rocch():
+    pass
+
+
+def mfom_smooth():
+    """
+    return: smoothed FNR, FPR, class loss scores
+    """
     pass
 
 
@@ -154,7 +185,7 @@ if __name__ == "__main__":
     # class_wise_scatter(data_frame=P_df)
 
     # class-wise score split
-    ts, nts = TS.class_wise_tnt(p=P_df, y=Y_df)
+    # ts, nts = TS.class_wise_tnt(p=P_df, y=Y_df)
     # class_wise_histograms(ts, nts)
 
     # ===
@@ -167,39 +198,35 @@ if __name__ == "__main__":
 
     # ===
     # class-wise discrete ROC plot
-    # TODO: class-wise EER
+    # TODO: class-wise EER, AvgEER
     # ===
     # class_wise_roc(Y_df, P_df)
 
     # ===
     # pooled discrete ROC plot
-    # TODO: AvgEER
+    # TODO: pooled EER
     # ===
     pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
     y_true = pool_sc.values[:, 1]
     y_score = pool_sc.values[:, 0]
-    pooled_roc(y_true=y_true, y_score=y_score)
+    # pooled_roc(y_true=y_true, y_score=y_score)
 
     # ===
-    # FNR vs FPR distributions
+    # class-wise FNR vs FPR distributions
     # ===
+    # TODO: implement
     # pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
     # y_true = pool_sc.values[:, 1]
     # y_score = pool_sc.values[:, 0]
-    #
-    # fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
-    # roc_auc = metrics.auc(fpr, tpr)
-    #
-    # plt.figure()
-    # plt.plot(thresholds, fpr, marker='o', linestyle='--', label='FPR')
-    # plt.plot(thresholds, 1-tpr, marker='o', linestyle='--', label='FNR')
-    # plt.plot(thresholds, np.abs(1 - tpr - fpr), marker='.', linestyle=':', alpha=0.8, lw=1, label='|FNR - FPR|')
-    # plt.plot(thresholds, np.abs(1 - tpr + fpr), marker='.', linestyle=':', alpha=0.8, lw=1, label='|FNR + FPR|')
-    # plt.xlabel('Thresholds')
-    # plt.ylabel('Error rate')
-    # plt.legend(loc="center right")
-    # plt.show()
+    # pooled_fnr_fpr(y_true=y_true, y_score=y_score)
 
+    # ===
+    # pooled FNR vs FPR distributions
+    # ===
+    pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
+    y_true = pool_sc.values[:, 1]
+    y_score = pool_sc.values[:, 0]
+    # pooled_fnr_fpr(y_true=y_true, y_score=y_score)
 
     # ===
     # class-wise Isotonic regression: sklearn
@@ -207,16 +234,6 @@ if __name__ == "__main__":
     y_true = Y_df.values[:, 0]
     y_score = P_df.values[:, 0]
     n = len(Y_df.values[:, 0])
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from matplotlib.collections import LineCollection
-
-    from sklearn.isotonic import IsotonicRegression
-
-    # x = np.arange(n)
-    # rs = check_random_state(0)
-    # y = rs.randint(-50, 50, size=(n,)) + 50. * np.log(1 + np.arange(n))
 
     ir = IsotonicRegression()
     ids = np.argsort(y_score)
@@ -234,7 +251,7 @@ if __name__ == "__main__":
     plt.plot(y_score_sr, y_true_sr, 'r.', markersize=12)
     plt.plot(y_score_sr, y_pav, 'g.-', markersize=12)
     plt.gca().add_collection(lc)
-    plt.legend(('Data', 'Isotonic Fit', 'Linear Fit'), loc='lower right')
+    plt.legend(('Data', 'Isotonic Fit'), loc='lower right')
     plt.title('Isotonic regression')
     plt.show()
 
