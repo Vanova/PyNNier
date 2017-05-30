@@ -3,13 +3,12 @@ Compare discrete and convex hull ROC computation
 and EER from these plots
 """
 import numpy as np
-import sklearn.metrics as metrics
+import sklearn.metrics as sk_metrics
 from pandas.plotting import scatter_matrix
 from scipy.stats import norm
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-from sklearn.isotonic import IsotonicRegression
 from mfom.utils import toy_scores as TS, plotter
+from metrics import eer, sklearn_rocch
 
 
 def toy_score_table(p_df, y_df):
@@ -71,18 +70,42 @@ def pooled_histogram(tar_pool, ntar_pool, bins=5):
     plt.show()
 
 
-def class_wise_roc(y_true_cw, y_score_cw):
-    fprs, tprs, aucs = [], [], []
+def plot_roc(y_true, y_score):
+    """
+    y_true: 1D array
+    y_score: 1D array
+    """
+    fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
+    roc_auc = sk_metrics.auc(fpr, tpr)
 
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, marker='o', linestyle='--', color='darkorange', label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+def plot_class_wise_roc(y_true_cw, y_score_cw):
+    """
+    y_true_cw: DataFrame, [samples x classes]
+    y_score_cw: DataFrame, [samples x classes]
+    """
+    fprs, tprs, aucs = [], [], []
     n_classes = len(y_true_cw.columns)
     for c in range(n_classes):
         y_true = y_true_cw.values[:, c]
         y_score = y_score_cw.values[:, c]
-        fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
+        fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
         # roc_auc = metrics.auc(fpr, tpr)
         fprs.append(fpr)
         tprs.append(tpr)
-        aucs.append(metrics.auc(fpr, tpr))
+        aucs.append(sk_metrics.auc(fpr, tpr))
 
     for c in range(n_classes):
         plt.plot(fprs[c], tprs[c], marker='o', linestyle='--',
@@ -99,51 +122,77 @@ def class_wise_roc(y_true_cw, y_score_cw):
     plt.show()
 
 
-def pooled_roc(y_true, y_score):
-    """
-    y_true:
-    y_score:
-    """
-    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
-    roc_auc = metrics.auc(fpr, tpr)
-
-    plt.figure()
-    lw = 2
-    plt.plot(fpr, tpr, marker='o', linestyle='--', color='darkorange', label='ROC curve (area = %0.2f)' % roc_auc)
-    # plt.plot(fpr, tpr, color='darkorange', lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic example')
-    plt.legend(loc="lower right")
-    plt.show()
-
-
-def pooled_fnr_fpr(y_true, y_score):
-    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
+def plot_roc_fnr_fpr(y_true, y_score):
+    fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
     fpr = np.insert(fpr, 0, 0.)
     tpr = np.insert(tpr, 0, 0.)
     fnr = 1. - tpr
     thresholds = np.insert(thresholds, 0, 1.)
+    eer_val = eer(y_true, y_score)
 
     plt.figure()
     plt.plot(thresholds, fpr, marker='o', linestyle='--', label='FPR')
     plt.plot(thresholds, fnr, marker='o', linestyle='--', label='FNR')
     plt.plot(thresholds, np.abs(fnr - fpr), marker='.', linestyle=':', alpha=0.8, lw=1, label='|FNR - FPR|')
     plt.plot(thresholds, np.abs(fnr + fpr), marker='.', linestyle=':', alpha=0.8, lw=1, label='|FNR + FPR|')
+    id_x = np.argmin(np.abs(fnr - fpr))
+    plt.plot(thresholds[id_x], eer_val, linestyle=' ', marker='*', markersize=10, label='pEER', color='red')
     plt.xlabel('Thresholds')
     plt.ylabel('Error rate')
     plt.legend(loc="center right")
     plt.show()
 
 
-def rocch():
+def plot_rocch(y_true, y_score):
+    fpr, tpr = sklearn_rocch(y_true, y_score)
+    roc_auc = sk_metrics.auc(fpr, tpr)
+
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, marker='o', linestyle='--', color='darkorange', label='ROCCH curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC convex hull')
+    plt.legend(loc="lower right")
+    plt.show()
+
+
+def plot_class_wise_rocch(y_true_df, y_score_df):
+    """
+    y_true: DataFrame, [samples x classes]
+    y_score: DataFrame, [samples x classes]
+    """
+    # TODO plot as grid per class
+    for yc, pc in zip(y_true_df, y_score_df):
+        # calc PAV per each class
+        y = y_true_df[yc]
+        p = y_score_df[pc]
+        plot_rocch(y, p)
+
+        # if plot_pav:
+        #     n = len(y)
+        #     segments = [[[i, y_sort[i]], [i, y_sort[i]]] for i in range(n)]
+        #     lc = LineCollection(segments, zorder=0)
+        #     lc.set_array(np.ones(len(y_sort)))
+        #     lc.set_linewidths(0.5 * np.ones(n))
+        #
+        #     plt.figure()
+        #     plt.plot(p_sort, y_sort, 'r.', markersize=12)
+        #     plt.plot(p_sort, p_pav, 'g.-', markersize=12)
+        #     plt.gca().add_collection(lc)
+        #     plt.legend(('Data', 'Isotonic Fit'), loc='lower right')
+        #     plt.title('Isotonic regression')
+        #     plt.show()
+
+
+def plot_rocch_fnr_fpr(y_true_df, y_score_df):
     pass
 
 
-def mfom_smooth():
+def mfom_smooth(y_true, y_score, alpha, beta):
     """
     return: smoothed FNR, FPR, class loss scores
     """
@@ -229,37 +278,33 @@ if __name__ == "__main__":
     # pooled_fnr_fpr(y_true=y_true, y_score=y_score)
 
     # ===
-    # class-wise Isotonic regression: sklearn
+    # class-wise Isotonic regression (sklearn), i.e. ROCCH
     # ===
-    y_true = Y_df.values[:, 0]
-    y_score = P_df.values[:, 0]
-    n = len(Y_df.values[:, 0])
+    plot_class_wise_rocch(y_true_df=Y_df, y_score_df=P_df)
 
-    ir = IsotonicRegression()
-    ids = np.argsort(y_score)
-    y_score_sr = np.sort(y_score)
-    y_true_sr = y_true[ids]
-
-    y_pav = ir.fit_transform(y_score_sr, y_true_sr)
-
-    segments = [[[i, y_true_sr[i]], [i, y_true_sr[i]]] for i in range(n)]
-    lc = LineCollection(segments, zorder=0)
-    lc.set_array(np.ones(len(y_true_sr)))
-    lc.set_linewidths(0.5 * np.ones(n))
-
-    fig = plt.figure()
-    plt.plot(y_score_sr, y_true_sr, 'r.', markersize=12)
-    plt.plot(y_score_sr, y_pav, 'g.-', markersize=12)
-    plt.gca().add_collection(lc)
-    plt.legend(('Data', 'Isotonic Fit'), loc='lower right')
-    plt.title('Isotonic regression')
-    plt.show()
-
-    # ===
-    # pooled ROCCH
-    # ===
-    pooled_roc(y_true_sr, y_pav)
-    pooled_roc(y_true, y_score)
+    # y_true = Y_df.values[:, 0]
+    # y_score = P_df.values[:, 0]
+    # n = len(Y_df.values[:, 0])
+    #
+    # ir = IsotonicRegression()
+    # ids = np.argsort(y_score)
+    # y_score_sr = np.sort(y_score)
+    # y_true_sr = y_true[ids]
+    #
+    # y_pav = ir.fit_transform(y_score_sr, y_true_sr)
+    #
+    # segments = [[[i, y_true_sr[i]], [i, y_true_sr[i]]] for i in range(n)]
+    # lc = LineCollection(segments, zorder=0)
+    # lc.set_array(np.ones(len(y_true_sr)))
+    # lc.set_linewidths(0.5 * np.ones(n))
+    #
+    # fig = plt.figure()
+    # plt.plot(y_score_sr, y_true_sr, 'r.', markersize=12)
+    # plt.plot(y_score_sr, y_pav, 'g.-', markersize=12)
+    # plt.gca().add_collection(lc)
+    # plt.legend(('Data', 'Isotonic Fit'), loc='lower right')
+    # plt.title('Isotonic regression')
+    # plt.show()
 
     # ===
     # smooth FN & FP (depend on alpha and beta) distributions and

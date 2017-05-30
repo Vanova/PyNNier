@@ -1,4 +1,5 @@
-import sklearn.metrics as metrics
+import sklearn.metrics as sk_metrics
+from sklearn.isotonic import IsotonicRegression
 import numpy as np
 
 
@@ -7,7 +8,7 @@ def eer(y_true, y_score):
     y_true: array of ground truth
     y_score: corresponding scores
     """
-    fpr, tpr, thresholds = metrics.roc_curve(y_true, y_score, drop_intermediate=True)
+    fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
 
     eps = 1E-6
     Points = [(0, 0)] + zip(fpr, tpr)
@@ -24,6 +25,31 @@ def eer(y_true, y_score):
         o = P1[1] - m * P1[0]
         EER = (1 - o) / (1 + m)
     return EER
+
+
+def sklearn_rocch(y_true, y_score):
+    """
+    Binary ROC convex hull.
+    NOTE: sklearn isotonic regression is used
+    y_true: 1D array
+    y_score: 1D array
+    """
+    id_permute = np.argsort(y_score)
+    y_sort = y_true[id_permute]
+    p_sort = np.sort(y_score)
+
+    ir = IsotonicRegression()
+    p_pav = ir.fit_transform(p_sort, y_sort)
+    fpr, tpr, _ = sk_metrics.roc_curve(y_sort, p_pav, drop_intermediate=True)
+    return fpr, tpr
+
+
+
+# def test_rocch(y_true, y_scores):
+#     """
+#     Test ROC convex hull using sklearn IsotonicRegression
+#     """
+#     pass
 
 
 # TODO: fix as roc_curves(y_true, y_scores)
@@ -70,4 +96,6 @@ def rocch(tar_scores, nontar_scores):
         fa = N - left - sum(Pideal[left:])
     pmiss[nbins] = miss / Nt
     pfa[nbins] = fa / Nn
+
+    return pmiss, pfa
 
