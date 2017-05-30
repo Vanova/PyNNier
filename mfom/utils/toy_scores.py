@@ -49,7 +49,7 @@ def class_wise_tnt(p, y):
     Split scores on target and non-target, across the classes (columns)
     p: predicted scores, DataFrame
     y: target labels, DataFrame
-    :return: two lists across classes
+    :return: two lists of DataFrames, target and non-target scores
     """
     ts = []
     nts = []
