@@ -2,14 +2,16 @@
 Compare discrete and convex hull ROC computation
 and EER from these plots
 """
+import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.metrics as sk_metrics
-from pandas.plotting import scatter_matrix
-import matplotlib.pyplot as plt
-from mfom.utils import toy_scores as TS
-import mfom.utils.plotter as mfom_plt
-from metrics import eer, sklearn_rocch
 from matplotlib.pyplot import cm
+from pandas.plotting import scatter_matrix
+import mfom.utils.plotter as mfom_plt
+from mfom.utils import toy_scores as TS
+from mfom.utils.metrics import eer, sklearn_rocch, sklearn_pav
+import cost_function as mfom_cost
+import mfom.utils.dcase_scores as mfom_dcase
 
 
 def toy_score_table(p_df, y_df):
@@ -74,33 +76,39 @@ def plot_roc_fnr_fpr(y_true, y_score):
 
 def plot_rocch(y_true, y_score):
     """
-        y_true: 1D array
-        y_score: 1D array
-        """
-    # fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
-    # roc_auc = sk_metrics.auc(fpr, tpr)
-    # eer_val = eer(y_true=y_true, y_score=y_score)
-    #
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 1, 1, frameon=True)
-    # mfom_plt.view_roc_curve(ax, fpr, tpr, roc_auc=roc_auc, eer_val=eer_val)
-    # fig.tight_layout()
-    # plt.show()
-
-
-    fpr, tpr = sklearn_rocch(y_true, y_score)
+    y_true: 1D array
+    y_score: 1D array
+    """
+    # calculate
+    fpr, tpr, _, y_calibr, p_calibr = sklearn_rocch(y_true, y_score)
     roc_auc = sk_metrics.auc(fpr, tpr)
+    eer_val = eer(y_true=y_calibr, y_score=p_calibr)
+    # plot ROCCH
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1, frameon=True)
+    mfom_plt.view_roc_curve(ax, fpr, tpr, roc_auc=roc_auc, eer_val=eer_val, title='ROC convex hull')
+    fig.tight_layout()
+    plt.show()
 
-    plt.figure()
-    lw = 2
-    plt.plot(fpr, tpr, marker='o', linestyle='--', color='darkorange', label='ROCCH curve (area = %0.2f)' % roc_auc)
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC convex hull')
-    plt.legend(loc="lower right")
+
+def plot_rocch_fnr_fpr(y_true, y_score):
+    """
+    y_true: 1D array
+    y_score: 1D array
+    """
+    # calculate ROCCH and calibrated scores
+    fpr, tpr, thresholds, y_calibr, p_calibr = sklearn_rocch(y_true, y_score)
+    eer_val = eer(y_true=y_calibr, y_score=p_calibr)
+    fpr = np.insert(fpr, 0, 0.)
+    tpr = np.insert(tpr, 0, 0.)
+    fnr = 1. - tpr
+    thresholds = np.insert(thresholds, 0, 1.)
+
+    # plot FNR/FPR distributions
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1, frameon=True)
+    mfom_plt.view_fnr_fpr_dist(ax, fnr, fpr, thresholds, eer_val)
+    fig.tight_layout()
     plt.show()
 
 
@@ -126,17 +134,16 @@ def class_wise_histograms(tars, ntars, bins=10):
     plt.show()
 
 
-def class_wise_roc(y_true_cw, y_score_cw):
+def class_wise_roc(y_true_df, y_score_df):
     """
-    y_true_cw: DataFrame, [samples x classes]
-    y_score_cw: DataFrame, [samples x classes]
+    y_true_df: DataFrame, [samples x classes]
+    y_score_df: DataFrame, [samples x classes]
     """
     # calculate fpr/tpr per class
     fprs, tprs, aucs, eer_vals = [], [], [], []
-    n_classes = len(y_true_cw.columns)
-    for c in range(n_classes):
-        y_true = y_true_cw.values[:, c]
-        y_score = y_score_cw.values[:, c]
+    for yc, pc in zip(y_true_df, y_score_df):
+        y_true = y_true_df[yc].values
+        y_score = y_score_df[pc].values
         fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
         fprs.append(fpr)
         tprs.append(tpr)
@@ -146,6 +153,7 @@ def class_wise_roc(y_true_cw, y_score_cw):
     # plot curves
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, frameon=True)
+    n_classes = len(y_true_df.columns)
     color = iter(cm.rainbow(np.linspace(0, 1, n_classes)))
     for c in range(n_classes):
         mfom_plt.view_roc_curve(ax, fprs[c], tprs[c], roc_auc=aucs[c], eer_val=eer_vals[c], color=next(color))
@@ -190,34 +198,62 @@ def class_wise_roc_fnr_fpr(y_true_cw, y_score_cw):
 
 def class_wise_rocch(y_true_df, y_score_df):
     """
-    y_true: DataFrame, [samples x classes]
-    y_score: DataFrame, [samples x classes]
+    y_true_df: DataFrame, [samples x classes]
+    y_score_df: DataFrame, [samples x classes]
     """
-    # TODO plot as grid per class
+    # calculate fpr/tpr per class
+    fprs, tprs, aucs, eer_vals = [], [], [], []
     for yc, pc in zip(y_true_df, y_score_df):
-        # calc PAV per each class
-        y = y_true_df[yc]
-        p = y_score_df[pc]
-        plot_rocch(y, p)
+        y_true = y_true_df[yc].values
+        y_score = y_score_df[pc].values
+        fpr, tpr, _, y_calibr, p_calibr = sklearn_rocch(y_true, y_score)
+        fprs.append(fpr)
+        tprs.append(tpr)
+        aucs.append(sk_metrics.auc(fpr, tpr))
+        eer_vals.append(eer(y_calibr, p_calibr))
 
-        # if plot_pav:
-        #     n = len(y)
-        #     segments = [[[i, y_sort[i]], [i, y_sort[i]]] for i in range(n)]
-        #     lc = LineCollection(segments, zorder=0)
-        #     lc.set_array(np.ones(len(y_sort)))
-        #     lc.set_linewidths(0.5 * np.ones(n))
-        #
-        #     plt.figure()
-        #     plt.plot(p_sort, y_sort, 'r.', markersize=12)
-        #     plt.plot(p_sort, p_pav, 'g.-', markersize=12)
-        #     plt.gca().add_collection(lc)
-        #     plt.legend(('Data', 'Isotonic Fit'), loc='lower right')
-        #     plt.title('Isotonic regression')
-        #     plt.show()
+    # plot ROCCH curves
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1, frameon=True)
+    n_classes = len(y_true_df.columns)
+    color = iter(cm.rainbow(np.linspace(0, 1, n_classes)))
+    for c in range(n_classes):
+        mfom_plt.view_roc_curve(ax, fprs[c], tprs[c], roc_auc=aucs[c], eer_val=eer_vals[c],
+                                color=next(color), title='ROC convex hull')
+    fig.tight_layout()
+    plt.show()
 
 
-def plot_rocch_fnr_fpr(y_true_df, y_score_df):
-    pass
+def class_wise_rocch_fnr_fpr(y_true_df, y_score_df):
+    """
+    y_true_df: DataFrame, [samples x classes]
+    y_score_df: DataFrame, [samples x classes]
+    """
+    # calculate fpr/tpr per class
+    fprs, fnrs, thresholds, eer_vals = [], [], [], []
+    for cname in y_true_df:
+        y_true = y_true_df[cname].values
+        y_score = y_score_df[cname].values
+        fpr, tpr, thresh, y_calibr, p_calibr = sklearn_rocch(y_true, y_score)
+        # TODO: fix plot values
+        fnr = 1. - tpr
+        # append for each class
+        fprs.append(fpr)
+        fnrs.append(fnr)
+        thresholds.append(thresh)
+        eer_vals.append(eer(y_true=y_calibr, y_score=p_calibr))
+
+    # plot FNR/FPR distributions
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    n_row = 2
+    n_col = np.round(len(y_true_df.columns) / float(n_row))
+    i = 1
+    for fnr, fpr, th, er in zip(fnrs, fprs, thresholds, eer_vals):
+        ax = fig.add_subplot(n_row, n_col, i, frameon=True)
+        mfom_plt.view_fnr_fpr_dist(ax, fnr, fpr, th, er)
+        i += 1
+    fig.tight_layout()
+    plt.show()
 
 
 def mfom_smooth(y_true, y_score, alpha, beta):
@@ -231,121 +267,142 @@ def mfom_smooth(y_true, y_score, alpha, beta):
 # discrete (or PAV calibrated) vs smoothed MFoM scores
 # ===
 # compare smooth and discrete scores, FN and FP
-
-
 # check how alpha and betta of l_k affect the scores, plot
 
-# ===
-# ROC vs ROCCH
-# ===
-
-# convex hull ROC plot
-
-# Isotonic regression or Platt calibration
-
-# ===
-# Whole set of scores vs batch: affect on the EER
-# ===
-
-# smEER, EER, pEER, AvgEER,
-
-# whole scores vs batch subsampled scores
 
 if __name__ == "__main__":
+    debug = True
 
-    # TODO: add command line interface
+    # P_df = TS.arr2DataFrame(TS.p_test)
+    # Y_df = TS.arr2DataFrame(TS.y_test)
+    P_df = mfom_dcase.read_dcase('data/test_scores/results_fold5.txt')
+    Y_df = mfom_dcase.read_dcase('data/test_scores/y_true_fold5.txt')
 
-    P_df = TS.arr2DataFrame(TS.p_test)
-    Y_df = TS.arr2DataFrame(TS.y_test)
+    if not debug:
+        # toy_score_table(p_df=P_df, y_df=Y_df)
+        class_wise_scatter(data_frame=P_df)
 
-    # toy_score_table(p_df=P_df, y_df=Y_df)
-    class_wise_scatter(data_frame=P_df)
+        # ===
+        # score histograms
+        # ===
+        # pooled target/non-target
+        tar, ntar = TS.pool_split_tnt(p_df=P_df, y_df=Y_df)
+        plot_histogram(tar, ntar, bins=10)
+        # class-wise score split
+        ts, nts = TS.class_wise_tnt(p=P_df, y=Y_df)
+        class_wise_histograms(ts, nts)
+
+        # ===
+        # ROC curves
+        # ===
+        # pooled scores
+        y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+        plot_roc(y_true=y_true, y_score=y_score)
+        # class-wise ROC curve
+        class_wise_roc(Y_df, P_df)
+
+        # ===
+        # FNR vs FPR distributions
+        # ===
+        # pooled scores
+        y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+        plot_roc_fnr_fpr(y_true=y_true, y_score=y_score)
+        # class-wise scores
+        class_wise_roc_fnr_fpr(Y_df, P_df)
+
+        # ===
+        # ROCCH curves
+        # ===
+        # pooled scores
+        y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+        plot_rocch(y_true=y_true, y_score=y_score)
+        # class-wise scores
+        class_wise_rocch(y_true_df=Y_df, y_score_df=P_df)
+
+        # ===
+        # ROCCH FNR/FPR distributions
+        # ===
+        y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+        plot_rocch_fnr_fpr(y_true=y_true, y_score=y_score)
+        # class-wise scores
+        class_wise_rocch_fnr_fpr(y_true_df=Y_df, y_score_df=P_df)
+
+        # ===
+        # PAV vs original scores distributions: hist
+        # ===
+        # how PAV changes the POOLED score distributions,
+        # even if these are correlated classes
+        # original pool scores
+        tar, ntar = TS.pool_split_tnt(p_df=P_df, y_df=Y_df)
+        plot_histogram(tar, ntar, bins=10)
+
+        # calibrated pool scores
+        y_score_df, y_true_df = TS.pool_scores(p_df=P_df, y_df=Y_df)
+        y_calibr, p_calibr = sklearn_pav(y_true=y_true_df.values, y_score=y_score_df.values)
+        # split up on target/non-target scores
+        tar, ntar = TS.array_tnt(p=p_calibr, y=y_calibr)
+        # plot calibrated
+        plot_histogram(tar, ntar, bins=10)
+
+        # class-wise calibration
+        y_cal_df, p_cal_df = TS.calibrate_scores(p_df=P_df, y_df=Y_df)
+        ts, nts = TS.class_wise_tnt(p=p_cal_df, y=y_cal_df)
+        class_wise_histograms(ts, nts)
+
 
     # ===
-    # score histograms
+    # Original vs 'unit-vs-zeros' scores distributions
     # ===
-    # pooled target/non-target
-    tar_pool, ntar_pool = TS.pooled_tnt(p=P_df, y=Y_df)
-    plot_histogram(tar_pool, ntar_pool, bins=10)
+    # original sigmoids vs l_k scores
+    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values)
+    ls_df = TS.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
 
+    # sm_eer = mfom_cost.mfom_eer_uvz_np_matrix(y_true=Y_df.values, y_pred=P_df.values)
+
+    tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
+    plot_histogram(tar, ntar, bins=10)
     # class-wise score split
-    ts, nts = TS.class_wise_tnt(p=P_df, y=Y_df)
+    ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
     class_wise_histograms(ts, nts)
 
     # ===
     # ROC curves
     # ===
-    # pooled scores
-    pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
-    y_true = pool_sc.values[:, 1]
-    y_score = pool_sc.values[:, 0]
+    # original
+    y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
     plot_roc(y_true=y_true, y_score=y_score)
 
+    # MFoM
+    # pooled scores
+    y_score, y_true = TS.pool_scores(p_df=ls_df, y_df=Y_df)
+    plot_roc(y_true=y_true, y_score=y_score)
     # class-wise ROC curve
-    class_wise_roc(Y_df, P_df)
-
-    # ===
-    # FNR vs FPR distributions
-    # ===
-    # pooled FNR vs FPR
-    pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
-    y_true = pool_sc.values[:, 1]
-    y_score = pool_sc.values[:, 0]
-    plot_roc_fnr_fpr(y_true=y_true, y_score=y_score)
-
-    # class-wise FNR vs FPR
-    class_wise_roc_fnr_fpr(Y_df, P_df)
+    class_wise_roc(Y_df, ls_df)
 
     # ===
     # ROCCH curves
     # ===
-    # pooled
-    # pool_sc = TS.pooled_scores(p=P_df, y=Y_df)
-    # y_true = pool_sc.values[:, 1]
-    # y_score = pool_sc.values[:, 0]
-    # plot_roc(y_true=y_true, y_score=y_score)
-
-    # class-wise
-    # class_wise_roc(Y_df, P_df)
-
-    class_wise_rocch(y_true_df=Y_df, y_score_df=P_df)
-
-    # y_true = Y_df.values[:, 0]
-    # y_score = P_df.values[:, 0]
-    # n = len(Y_df.values[:, 0])
-    #
-    # ir = IsotonicRegression()
-    # ids = np.argsort(y_score)
-    # y_score_sr = np.sort(y_score)
-    # y_true_sr = y_true[ids]
-    #
-    # y_pav = ir.fit_transform(y_score_sr, y_true_sr)
-    #
-    # segments = [[[i, y_true_sr[i]], [i, y_true_sr[i]]] for i in range(n)]
-    # lc = LineCollection(segments, zorder=0)
-    # lc.set_array(np.ones(len(y_true_sr)))
-    # lc.set_linewidths(0.5 * np.ones(n))
-    #
-    # fig = plt.figure()
-    # plt.plot(y_score_sr, y_true_sr, 'r.', markersize=12)
-    # plt.plot(y_score_sr, y_pav, 'g.-', markersize=12)
-    # plt.gca().add_collection(lc)
-    # plt.legend(('Data', 'Isotonic Fit'), loc='lower right')
-    # plt.title('Isotonic regression')
-    # plt.show()
-
+    # pooled scores
+    y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+    plot_rocch(y_true=y_true, y_score=y_score)
 
     # ===
-    # ROCCH vs ROC FNR/FPR
+    # smooth FN & FP (depends on alpha and beta) distributions and
+    # value of smoothed EER and discrete EER
     # ===
 
 
     # ===
-    # PAV vs original scores distributions
+    # Whole set of scores vs batch: affect on the EER
     # ===
 
 
     # ===
-    # smooth FN & FP (depend on alpha and beta) distributions and
-    # value of smoothed EER and discrete EER on the right
+    # Isotonic regression or Platt calibration
+    # ===
+
+    # smEER, EER, pEER, AvgEER
+
+    # ===
+    # whole scores vs batch subsampled scores
     # ===

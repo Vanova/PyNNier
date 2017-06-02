@@ -46,7 +46,7 @@ def view_histogram(ax, tar, nontar, bins=5, gaus_fit=True, min=0., max=1.):
     return ax
 
 
-def view_roc_curve(ax, fpr, tpr, eer_val=None, roc_auc=None, color=None):
+def view_roc_curve(ax, fpr, tpr, eer_val=None, roc_auc=None, color=None, title='ROC curve'):
     lw = 2
     ax.plot(fpr, tpr, marker='o', linestyle='--', color=color, label='ROC curve (area = %0.2f)' % roc_auc)
     ax.plot([0, 1], [0, 1], color='navy', lw=0.5, linestyle='--')
@@ -56,7 +56,7 @@ def view_roc_curve(ax, fpr, tpr, eer_val=None, roc_auc=None, color=None):
     ax.set_ylim([0.0, 1.05])
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
-    ax.set_title('Receiver operating characteristic example')
+    ax.set_title(title)
     ax.legend(loc="lower right")
     return ax
 

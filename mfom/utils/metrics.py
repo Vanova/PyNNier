@@ -34,22 +34,25 @@ def sklearn_rocch(y_true, y_score):
     y_true: 1D array
     y_score: 1D array
     """
+    y_calibr, p_calibr = sklearn_pav(y_true=y_true, y_score=y_score)
+    fpr, tpr, thresholds = sk_metrics.roc_curve(y_calibr, p_calibr, drop_intermediate=True)
+    return fpr, tpr, thresholds, y_calibr, p_calibr
+
+
+def sklearn_pav(y_true, y_score):
+    """
+    Binary PAV algorithm
+    NOTE: sklearn isotonic regression is used
+    y_true: 1D array
+    y_score: 1D array
+    """
     id_permute = np.argsort(y_score)
     y_sort = y_true[id_permute]
     p_sort = np.sort(y_score)
 
     ir = IsotonicRegression()
-    p_pav = ir.fit_transform(p_sort, y_sort)
-    fpr, tpr, _ = sk_metrics.roc_curve(y_sort, p_pav, drop_intermediate=True)
-    return fpr, tpr
-
-
-
-# def test_rocch(y_true, y_scores):
-#     """
-#     Test ROC convex hull using sklearn IsotonicRegression
-#     """
-#     pass
+    p_calibrated = ir.fit_transform(p_sort, y_sort)
+    return y_sort, p_calibrated
 
 
 # TODO: fix as roc_curves(y_true, y_scores)
