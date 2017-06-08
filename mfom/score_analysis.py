@@ -7,11 +7,12 @@ import numpy as np
 import sklearn.metrics as sk_metrics
 from matplotlib.pyplot import cm
 from pandas.plotting import scatter_matrix
-import mfom.utils.plotter as mfom_plt
-from mfom.utils import toy_scores as TS
-from mfom.utils.metrics import eer, sklearn_rocch, sklearn_pav
+
 import cost_function as mfom_cost
 import mfom.utils.dcase_scores as mfom_dcase
+import mfom.visual.plotter as mfom_plt
+from mfom.utils import toy_scores as TS
+from mfom.utils.metrics import eer, sklearn_rocch, sklearn_pav
 
 
 def toy_score_table(p_df, y_df):
@@ -275,8 +276,12 @@ if __name__ == "__main__":
 
     # P_df = TS.arr2DataFrame(TS.p_test)
     # Y_df = TS.arr2DataFrame(TS.y_test)
-    P_df = mfom_dcase.read_dcase('data/test_scores/results_fold5.txt')
-    Y_df = mfom_dcase.read_dcase('data/test_scores/y_true_fold5.txt')
+    P_df = mfom_dcase.read_dcase('data/test_scores/results_fold1.txt')
+    Y_df = mfom_dcase.read_dcase('data/test_scores/y_true_fold1.txt')
+
+    # 1 - l_k scores
+    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values, alpha=1.)
+    ls_df = TS.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
 
     if not debug:
         # toy_score_table(p_df=P_df, y_df=Y_df)
@@ -349,30 +354,47 @@ if __name__ == "__main__":
         ts, nts = TS.class_wise_tnt(p=p_cal_df, y=y_cal_df)
         class_wise_histograms(ts, nts)
 
+    # ===
+    # Histograms: original scores
+    # ===
+    # pooled scores
+    # tar, ntar = TS.pool_split_tnt(p_df=P_df, y_df=Y_df)
+    # plot_histogram(tar, ntar, bins=10)
+    # # class-wise score split
+    # ts, nts = TS.class_wise_tnt(p=P_df, y=Y_df)
+    # class_wise_histograms(ts, nts)
 
     # ===
-    # Original vs 'unit-vs-zeros' scores distributions
+    # Histograms: MFoM scores
     # ===
-    # original sigmoids vs l_k scores
-    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values)
-    ls_df = TS.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
-
-    # sm_eer = mfom_cost.mfom_eer_uvz_np_matrix(y_true=Y_df.values, y_pred=P_df.values)
-
-    tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
-    plot_histogram(tar, ntar, bins=10)
-    # class-wise score split
-    ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
-    class_wise_histograms(ts, nts)
+    # pooled scores
+    # tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
+    # plot_histogram(tar, ntar, bins=10)
+    # # class-wise score split
+    # ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
+    # class_wise_histograms(ts, nts)
 
     # ===
-    # ROC curves
+    # ROC: original
     # ===
     # original
     y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
-    plot_roc(y_true=y_true, y_score=y_score)
+    plot_roc(y_true=y_true.values, y_score=y_score)
+    # class-wise ROC curve
+    class_wise_roc(Y_df, P_df)
 
-    # MFoM
+    # ===
+    # ROCCH: original scores
+    # ===
+    # pooled scores
+    y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+    plot_rocch(y_true=y_true, y_score=y_score)
+    # class-wise scores
+    class_wise_rocch(y_true_df=Y_df, y_score_df=P_df)
+
+    # ===
+    # ROC: MFoM
+    # ===
     # pooled scores
     y_score, y_true = TS.pool_scores(p_df=ls_df, y_df=Y_df)
     plot_roc(y_true=y_true, y_score=y_score)
@@ -380,11 +402,19 @@ if __name__ == "__main__":
     class_wise_roc(Y_df, ls_df)
 
     # ===
-    # ROCCH curves
+    # ROCCH: MFoM scores
     # ===
     # pooled scores
-    y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+    y_score, y_true = TS.pool_scores(p_df=ls_df, y_df=Y_df)
     plot_rocch(y_true=y_true, y_score=y_score)
+    # class-wise scores
+    class_wise_rocch(y_true_df=Y_df, y_score_df=ls_df)
+
+
+
+
+
+
 
     # ===
     # smooth FN & FP (depends on alpha and beta) distributions and
@@ -393,7 +423,7 @@ if __name__ == "__main__":
 
 
     # ===
-    # Whole set of scores vs batch: affect on the EER
+    # Whole set of scores vs batches: affect on the EER, smEER, pEER, AvgEER
     # ===
 
 
@@ -401,8 +431,3 @@ if __name__ == "__main__":
     # Isotonic regression or Platt calibration
     # ===
 
-    # smEER, EER, pEER, AvgEER
-
-    # ===
-    # whole scores vs batch subsampled scores
-    # ===

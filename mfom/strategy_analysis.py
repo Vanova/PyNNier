@@ -1,9 +1,10 @@
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
-import math
-import utils.plot_styles as plts
+from matplotlib import cm
+
+import mfom.visual.plot_styles as plts
 
 
 def OneVsAllFunction(dim=3, fname=None):

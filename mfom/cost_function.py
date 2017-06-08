@@ -47,10 +47,11 @@ def _uvz_loss_scores(y_true, y_pred, alpha=1., beta=0., is_training=True):
     if is_training:
         y_pred = np.clip(y_pred, _EPSILON, 1.0 - _EPSILON)
         y_neg = 1 - y_true  # or y = np.logical_not(y_true)
-        # units and zeros models log average
+        # Kolmogorov log average of unit labeled models
         unit_avg = y_true * np.exp(y_pred)
         # average over non-zero elements
         unit_avg = np.log(_non_zero_mean_np(unit_avg))
+        # Kolmogorov log average of zero labeled models
         zeros_avg = y_neg * np.exp(y_pred)
         # average over non-zero elements
         zeros_avg = np.log(_non_zero_mean_np(zeros_avg))

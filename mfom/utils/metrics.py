@@ -55,50 +55,50 @@ def sklearn_pav(y_true, y_score):
     return y_sort, p_calibrated
 
 
-# TODO: fix as roc_curves(y_true, y_scores)
-def rocch(tar_scores, nontar_scores):
-    """
-    tar_scores: list
-    nontar_scores: list
-    """
-    Nt = len(tar_scores)
-    Nn = len(nontar_scores)
-    N = Nt + Nn
-
-    # scores = [tar_scores(:)',nontar_scores(:)']
-    # scores = tar_scores + nontar_scores
-    scores = []
-    scores.extend(tar_scores)
-    scores.extend(nontar_scores)
-
-    # Pideal = [ones(1, Nt), zeros(1, Nn)]
-    # ideal, but non - monotonic posterior
-    Pideal = np.ones_like(tar_scores).tolist() + np.zeros_like(nontar_scores).tolist()
-
-    perturb = np.argsort(scores)
-    scores = np.sort(scores)
-
-    Pideal = Pideal[perturb]
-
-    [Popt, width] = pavx(Pideal);
-
-    nbins = len(width)
-    pmiss = np.zeros(nbins+1)
-    pfa = np.zeros(nbins+1)
-
-    # threshold leftmost: accept everything, miss nothing
-    left = 0 # 0 scores to left of threshold
-    fa = Nn
-    miss = 0
-
-    for i in range(nbins):
-        pmiss[i] = miss / Nt
-        pfa[i] = fa / Nn
-        left = left + width[i]
-        miss = sum(Pideal[1:left])
-        fa = N - left - sum(Pideal[left:])
-    pmiss[nbins] = miss / Nt
-    pfa[nbins] = fa / Nn
-
-    return pmiss, pfa
-
+# # TODO: fix as roc_curves(y_true, y_scores)
+# def rocch(tar_scores, nontar_scores):
+#     """
+#     tar_scores: list
+#     nontar_scores: list
+#     """
+#     Nt = len(tar_scores)
+#     Nn = len(nontar_scores)
+#     N = Nt + Nn
+#
+#     # scores = [tar_scores(:)',nontar_scores(:)']
+#     # scores = tar_scores + nontar_scores
+#     scores = []
+#     scores.extend(tar_scores)
+#     scores.extend(nontar_scores)
+#
+#     # Pideal = [ones(1, Nt), zeros(1, Nn)]
+#     # ideal, but non - monotonic posterior
+#     Pideal = np.ones_like(tar_scores).tolist() + np.zeros_like(nontar_scores).tolist()
+#
+#     perturb = np.argsort(scores)
+#     scores = np.sort(scores)
+#
+#     Pideal = Pideal[perturb]
+#
+#     [Popt, width] = pavx(Pideal);
+#
+#     nbins = len(width)
+#     pmiss = np.zeros(nbins+1)
+#     pfa = np.zeros(nbins+1)
+#
+#     # threshold leftmost: accept everything, miss nothing
+#     left = 0 # 0 scores to left of threshold
+#     fa = Nn
+#     miss = 0
+#
+#     for i in range(nbins):
+#         pmiss[i] = miss / Nt
+#         pfa[i] = fa / Nn
+#         left = left + width[i]
+#         miss = sum(Pideal[1:left])
+#         fa = N - left - sum(Pideal[left:])
+#     pmiss[nbins] = miss / Nt
+#     pfa[nbins] = fa / Nn
+#
+#     return pmiss, pfa
+#
