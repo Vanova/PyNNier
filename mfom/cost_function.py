@@ -44,6 +44,8 @@ def mfom_eer_uvz_np_matrix(y_true, y_pred, alpha=3., beta=0.):
 
 
 def _uvz_loss_scores(y_true, y_pred, alpha=1., beta=0., is_training=True):
+    assert type(y_true) == np.ndarray
+    assert type(y_pred) == np.ndarray
     if is_training:
         y_pred = np.clip(y_pred, _EPSILON, 1.0 - _EPSILON)
         y_neg = 1 - y_true  # or y = np.logical_not(y_true)

@@ -369,7 +369,7 @@ if __name__ == "__main__":
     # ===
     # pooled scores
     # tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
-    # plot_histogram(tar, ntar, bins=10)
+    plot_histogram(tar, ntar, bins=10)
     # # class-wise score split
     # ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
     # class_wise_histograms(ts, nts)
