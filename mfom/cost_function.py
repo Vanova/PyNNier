@@ -5,7 +5,7 @@ import numpy as np
 _EPSILON = 1e-7
 
 
-def mfom_eer_uvz_np_matrix(y_true, y_pred, alpha=3., beta=0.):
+def mfom_eer_uvz(y_true, y_pred, alpha=3., beta=0.):
     """
     MFoM-EER with 'Units-vs-zeros' strategy, matrix numpy implementation.
     Optimized implementation of choosing anti-model, either belonging to zero
@@ -14,38 +14,32 @@ def mfom_eer_uvz_np_matrix(y_true, y_pred, alpha=3., beta=0.):
     y_pred: sigmoid scores, we preprocess these to d_k and l_k,
     i.e. loss function l_k(Z)
     """
-    y_pred = np.clip(y_pred, _EPSILON, 1.0 - _EPSILON)
     y_neg = 1 - y_true  # or y = np.logical_not(y_true)
-    # units and zeros models log average
-    unit_avg = y_true * np.exp(y_pred)
-    # average over non-zero elements
-    unit_avg = np.log(_non_zero_mean_np(unit_avg))
-    zeros_avg = y_neg * np.exp(y_pred)
-    # average over non-zero elements
-    zeros_avg = np.log(_non_zero_mean_np(zeros_avg))
-    # misclassification measure, optimized
-    d = -y_pred + y_neg * unit_avg + y_true * zeros_avg
-
     # number of negative samples per each class
-    # N = np.sum(y_neg > _EPSILON, axis=0, keepdims=True)
+    N = np.sum(y_neg, axis=0, keepdims=True)
     # number of positive samples per each class
-    # P = np.sum(y_true > _EPSILON, axis=0, keepdims=True)
+    P = np.sum(y_true, axis=0, keepdims=True)
     # calculate class loss function l
-    l = 1.0 / (1.0 + np.exp(-alpha * d - beta))
+    l = _uvz_loss_scores(y_true, y_pred, alpha, beta, is_training=True)
+
     # ===
-    # corrected smooth EER calc
+    # smoothed EER
     # ===
     fn = l * y_true
-    fp = (1. - l) * y_neg  # NOTE: simplified
-    smooth_eer = fn + 0.1 * np.abs(fn - fp)
+    fp = (1. - l) * y_neg
+    # sum across samples
+    fnr = np.sum(fn, axis=0, keepdims=True) / P
+    fpr = np.sum(fp, axis=0, keepdims=True) / N
+    # smooth_eer = fn + 0.1 * np.abs(fn - fp) # regularized
     # simplified smooth EER
-    # smV = np.log(np.sum(smooth_eer, axis=-1, keepdims=True)) - np.log(N * P + _EPSILON)
-    return np.sum(smooth_eer, axis=-1)
+    smooth_eer = np.abs(fnr - fpr)
+    return fnr, fpr, np.mean(smooth_eer)
 
 
 def _uvz_loss_scores(y_true, y_pred, alpha=1., beta=0., is_training=True):
-    assert type(y_true) == np.ndarray
-    assert type(y_pred) == np.ndarray
+    assert isinstance(y_true, np.ndarray)
+    assert isinstance(y_pred, np.ndarray)
+
     if is_training:
         y_pred = np.clip(y_pred, _EPSILON, 1.0 - _EPSILON)
         y_neg = 1 - y_true  # or y = np.logical_not(y_true)
@@ -66,7 +60,6 @@ def _uvz_loss_scores(y_true, y_pred, alpha=1., beta=0., is_training=True):
         # calculate class loss function l
         l = 1.0 / (1.0 + np.exp(-alpha * d - beta))
     return l
-
 
 
 def _ovo_loss_scores(y_true, y_pred, alpha=3., beta=0.):

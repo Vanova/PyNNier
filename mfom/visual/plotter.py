@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import colorConverter
 import numpy as np
 from scipy.stats import norm
+from matplotlib import cm
+import plot_styles as plts
+
+plt.style.use('seaborn')
 
 
 def colored_table(ax, vals, row_lab, col_lab):
@@ -74,3 +78,32 @@ def view_fnr_fpr_dist(ax, fnr, fpr, thresholds, eer_val):
     ax.set_ylabel('Error rate')
     ax.legend(loc="center right")
     return ax
+
+
+def surface_view(ax, x, y, z, xlim, ylim, labels):
+    surf = ax.plot_surface(x, y, z,
+                           rstride=1, cstride=1, linewidth=0,
+                           alpha=0.5, cmap=cm.coolwarm, antialiased=True, zorder=0)
+    ax.set_xlabel(labels[0], fontdict=plts.label_font)
+    ax.set_ylabel(labels[1], fontdict=plts.label_font)
+    ax.set_zlabel(labels[2], fontdict=plts.label_font)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return surf
+
+
+def show_curves(y, legend=None, labels=None, title=None):
+    """
+    Plot curve, starting from x = 0
+    """
+    for it in y:
+        plt.plot(it)
+    if legend:
+        plt.legend(legend, loc='upper right')
+    if labels:
+        plt.xlabel(labels[0], fontdict=plts.label_font)
+        plt.ylabel(labels[1], fontdict=plts.label_font)
+    if title:
+        plt.title(title, fontdict=plts.title_font)
+    plt.grid()
+    plt.show()

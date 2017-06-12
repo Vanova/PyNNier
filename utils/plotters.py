@@ -5,9 +5,9 @@ import numpy as np
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import plot_styles as plts
-import seaborn as sns
 from matplotlib.colors import colorConverter, ListedColormap
 import toy_loader
+plt.style.use('seaborn')
 
 COLORS = np.array(['!',
                    '#FF3333',  # red [1, 0]
