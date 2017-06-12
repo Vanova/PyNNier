@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import metrics as mfom_metr
+import sklearn.metrics as sk_metrics
 
 # test scores
 p_test = np.array([[0.6, 0.8, 0.7, 0.9],
@@ -74,13 +75,13 @@ def class_wise_tnt(p, y):
     return ts, nts
 
 
-def array_tnt(p, y):
-    """
-    Return target part of scores and non-target
-    p: 1D array, predicted scores
-    y: 1D array, ground truth
-    """
-    return p[y > 0], p[y < 1]
+# def array_tnt(p, y):
+#     """
+#     Return target part of scores and non-target
+#     p: 1D array, predicted scores
+#     y: 1D array, ground truth
+#     """
+#     return p[y > 0], p[y < 1]
 
 
 def pool_split_tnt(p_df, y_df):
@@ -99,21 +100,20 @@ def pool_split_tnt(p_df, y_df):
     return np.array(ts_pool), np.array(nts_pool)
 
 
-def dataframe_split_tnt(p_df, y_df):
-    """
-    Split only targets and only non-target scores across all classes
-    p: DataFrame
-    y: DataFrame
-    :return: target 1D array, non-target 1D array
-    """
-    # TODO refactor
-    ts_pool = []
-    nts_pool = []
-    for c in y_df:
-        ts_pool.extend(p_df[c][y_df[c] > 0].values)
-        nts_pool.extend(p_df[c][y_df[c] < 1].values)
-    return np.array(ts_pool), np.array(nts_pool)
-
+# def dataframe_split_tnt(p_df, y_df):
+#     """
+#     Split only targets and only non-target scores across all classes
+#     p: DataFrame
+#     y: DataFrame
+#     :return: target 1D array, non-target 1D array
+#     """
+#     # TODO refactor
+#     ts_pool = []
+#     nts_pool = []
+#     for c in y_df:
+#         ts_pool.extend(p_df[c][y_df[c] > 0].values)
+#         nts_pool.extend(p_df[c][y_df[c] < 1].values)
+#     return np.array(ts_pool), np.array(nts_pool)
 
 
 def pool_scores(p_df, y_df):
@@ -147,3 +147,16 @@ def calibrate_scores(p_df, y_df):
     P = np.asarray(P).T
     return arr2DataFrame(Y, col_id=y_df.columns), \
            arr2DataFrame(P, col_id=y_df.columns)
+
+
+def count_discrete_errors(y_true, y_score):
+    """
+    :return: lists: tpr, tnr, fpr, fnr, thresholds
+    """
+    fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
+    fpr = np.insert(fpr, 0, 0.)
+    tpr = np.insert(tpr, 0, 0.)
+    fnr = 1. - tpr
+    tnr = 1. - fpr
+    thresholds = np.insert(thresholds, 0, 1.)
+    return tpr, tnr, fpr, fnr, thresholds

@@ -41,7 +41,7 @@ def sklearn_rocch(y_true, y_score):
 
 def sklearn_pav(y_true, y_score):
     """
-    Binary PAV algorithm
+    Binary PAV algorithm, algorithm to solve Isotonic regression
     NOTE: sklearn isotonic regression is used
     y_true: 1D array
     y_score: 1D array

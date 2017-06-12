@@ -7,7 +7,6 @@ import numpy as np
 import sklearn.metrics as sk_metrics
 from matplotlib.pyplot import cm
 from pandas.plotting import scatter_matrix
-
 import cost_function as mfom_cost
 import mfom.utils.dcase_scores as mfom_dcase
 import mfom.visual.plotter as mfom_plt
