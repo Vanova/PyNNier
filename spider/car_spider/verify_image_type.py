@@ -1,9 +1,10 @@
 import functools
 import json
 import sys
+import os
+import os.path as path
 from multiprocessing import Pool
 from keras.preprocessing import image
-import cv2
 
 
 def readTasking(filename):
@@ -30,6 +31,9 @@ def procLine2(l, r):
         small_img.save(img_path)
         return (True, l['filename'])
     except:
+        # delete file which cause error
+        if path.isfile(img_path):
+            os.remove(img_path)
         return (False, l['filename'])
 
 
@@ -52,13 +56,15 @@ def main():
     # ===
     # take root path to image data
     # ===
-    img_root = sys.argv[2]
+    # img_root = sys.argv[2]
+    img_root = './data'
     procLine = functools.partial(procLine2, r=img_root)
 
     # ===
     # read 'dataset' list and apply function 'procLine2' to it
     # ===
-    data_list = sys.argv[1]
+    # data_list = sys.argv[1]
+    data_list = './data/lists/dataset'
     tasking = readTasking(data_list)
     p = Pool()
     files = p.map(procLine, tasking)
