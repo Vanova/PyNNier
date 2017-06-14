@@ -1,3 +1,9 @@
+"""
+TODO try this: http://www.vanessasaur.us/rawr/2017/multiprocess/
+read about GIL: https://habrahabr.ru/post/84629/
+https://www.blog.pythonlibrary.org/2016/08/02/python-201-a-multiprocessing-tutorial/
+"""
+
 import itertools
 import json
 import socket
@@ -11,6 +17,7 @@ import os.path as path
 import requests
 
 DATA_DIR = './data/'
+
 
 def read_tasking(fname):
     """
@@ -32,7 +39,7 @@ def read_tasking(fname):
 
 def grouper(n, iterable):
     """
-    put return n itmes at a time from an interable
+    return n itmes at a time from an interable
     """
     it = iter(iterable)
     while True:
@@ -82,8 +89,8 @@ def main(at_once=100):
 
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(multiprocessing.SUBDEBUG)
-    NUM_WORKERS = multiprocessing.cpu_count() * 3
-    p = Pool(NUM_WORKERS)
+    # NUM_WORKERS = multiprocessing.cpu_count() * 2
+    p = Pool()
     # get listing of files to download
     task_list = read_tasking(fname)
     print('processed {0} lines to download'.format(len(task_list)))

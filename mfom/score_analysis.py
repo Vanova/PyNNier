@@ -272,14 +272,14 @@ def mfom_smooth(y_true, y_score, alpha, beta):
 
 if __name__ == "__main__":
     debug = True
-
+    # TODO REFACTORRRRR!!!!
     # P_df = TS.arr2DataFrame(TS.p_test)
     # Y_df = TS.arr2DataFrame(TS.y_test)
     P_df = mfom_dcase.read_dcase('data/test_scores/results_fold1.txt')
     Y_df = mfom_dcase.read_dcase('data/test_scores/y_true_fold1.txt')
 
     # 1 - l_k scores
-    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values, alpha=1.)
+    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values, alpha=3.)
     ls_df = TS.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
 
     if not debug:
@@ -353,43 +353,43 @@ if __name__ == "__main__":
         ts, nts = TS.class_wise_tnt(p=p_cal_df, y=y_cal_df)
         class_wise_histograms(ts, nts)
 
-    # ===
-    # Histograms: original scores
-    # ===
-    # pooled scores
+    # # ===
+    # # Histograms: original scores
+    # # ===
+    # # pooled scores
     # tar, ntar = TS.pool_split_tnt(p_df=P_df, y_df=Y_df)
     # plot_histogram(tar, ntar, bins=10)
     # # class-wise score split
     # ts, nts = TS.class_wise_tnt(p=P_df, y=Y_df)
     # class_wise_histograms(ts, nts)
-
-    # ===
-    # Histograms: MFoM scores
-    # ===
-    # pooled scores
+    #
+    # # ===
+    # # Histograms: MFoM scores
+    # # ===
+    # # pooled scores
     # tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
-    plot_histogram(tar, ntar, bins=10)
+    # plot_histogram(tar, ntar, bins=10)
     # # class-wise score split
     # ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
     # class_wise_histograms(ts, nts)
-
-    # ===
-    # ROC: original
-    # ===
-    # original
-    y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
-    plot_roc(y_true=y_true.values, y_score=y_score)
-    # class-wise ROC curve
-    class_wise_roc(Y_df, P_df)
-
-    # ===
-    # ROCCH: original scores
-    # ===
-    # pooled scores
-    y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
-    plot_rocch(y_true=y_true, y_score=y_score)
-    # class-wise scores
-    class_wise_rocch(y_true_df=Y_df, y_score_df=P_df)
+    #
+    # # ===
+    # # ROC: original
+    # # ===
+    # # original
+    # y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+    # plot_roc(y_true=y_true.values, y_score=y_score)
+    # # class-wise ROC curve
+    # class_wise_roc(Y_df, P_df)
+    #
+    # # ===
+    # # ROCCH: original scores
+    # # ===
+    # # pooled scores
+    # y_score, y_true = TS.pool_scores(p_df=P_df, y_df=Y_df)
+    # plot_rocch(y_true=y_true, y_score=y_score)
+    # # class-wise scores
+    # class_wise_rocch(y_true_df=Y_df, y_score_df=P_df)
 
     # ===
     # ROC: MFoM
@@ -398,7 +398,49 @@ if __name__ == "__main__":
     y_score, y_true = TS.pool_scores(p_df=ls_df, y_df=Y_df)
     plot_roc(y_true=y_true, y_score=y_score)
     # class-wise ROC curve
-    class_wise_roc(Y_df, ls_df)
+    # class_wise_roc(Y_df, ls_df)
+
+    # 2nd MFoM
+    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=ls_df.values, alpha=3.)
+    ls_df = TS.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
+
+    y_score, y_true = TS.pool_scores(p_df=ls_df, y_df=Y_df)
+    plot_roc(y_true=y_true, y_score=y_score)
+
+    # ===
+    # Histograms: MFoM scores
+    # ===
+    # pooled scores
+    tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
+    plot_histogram(tar, ntar, bins=10)
+    # class-wise score split
+    ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
+    class_wise_histograms(ts, nts)
+
+
+    # 3d MfoM
+    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=ls_df.values, alpha=3.)
+    ls_df = TS.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
+
+    y_score, y_true = TS.pool_scores(p_df=ls_df, y_df=Y_df)
+    plot_roc(y_true=y_true, y_score=y_score)
+
+    # ===
+    # Histograms: MFoM scores
+    # ===
+    # pooled scores
+    tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
+    plot_histogram(tar, ntar, bins=10)
+    # class-wise score split
+    ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
+    class_wise_histograms(ts, nts)
+
+    # 4th MfoM
+    loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=ls_df.values, alpha=3.)
+    ls_df = TS.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
+
+    y_score, y_true = TS.pool_scores(p_df=ls_df, y_df=Y_df)
+    plot_roc(y_true=y_true, y_score=y_score)
 
     # ===
     # ROCCH: MFoM scores
@@ -409,10 +451,25 @@ if __name__ == "__main__":
     # class-wise scores
     class_wise_rocch(y_true_df=Y_df, y_score_df=ls_df)
 
+    # ===
+    # Histograms: MFoM scores
+    # ===
+    # pooled scores
+    tar, ntar = TS.pool_split_tnt(p_df=ls_df, y_df=Y_df)
+    plot_histogram(tar, ntar, bins=10)
+    # class-wise score split
+    ts, nts = TS.class_wise_tnt(p=ls_df, y=Y_df)
+    class_wise_histograms(ts, nts)
 
-
-
-
+    # ===
+    # Histograms: ground truth
+    # ===
+    # pooled scores
+    tar, ntar = TS.pool_split_tnt(p_df=Y_df, y_df=Y_df)
+    plot_histogram(tar, ntar, bins=10)
+    # class-wise score split
+    ts, nts = TS.class_wise_tnt(p=Y_df, y=Y_df)
+    class_wise_histograms(ts, nts)
 
 
     # ===

@@ -140,8 +140,8 @@ class ISmoothErrorRateView(InteractiveBase):
             # fnr_a.append(fnr[0, 2])
             for b in range(self.n_grid_dots):
                 fnr, fpr, v = mfom_cost.mfom_eer_uvz(self.Y, self.P, xs[a, b], ys[a, b])
-                z[a, b] = fnr[0, 2]
-        # mfom_plt.show_curves([fnr_a])
+                # z[a, b] = fnr[0, 2]
+                z[a, b] = v
         return xs, ys, z
 
 
@@ -178,14 +178,14 @@ if __name__ == '__main__':
     # Histograms: MFoM scores
     # ===
     # plot interactive histogram
-    # tar, ntar = mfom_toy.pool_split_tnt(p_df=intr_data.mfom_P, y_df=intr_data.orig_Y)
-    # fig = plt.figure(figsize=plt.figaspect(0.5))
-    # ax = fig.add_subplot(1, 1, 1, frameon=True)
-    # fig.subplots_adjust(left=0.1, bottom=0.25)
-    #
-    # hist = IHistogramView(ax, tar, ntar, intr_data, bins=10)
-    # vis = ISliderView(fig, canvas_view=hist, init_a=def_alpha, init_b=def_beta)
-    # plt.show()
+    tar, ntar = mfom_toy.pool_split_tnt(p_df=intr_data.mfom_P, y_df=intr_data.orig_Y)
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    ax = fig.add_subplot(1, 1, 1, frameon=True)
+    fig.subplots_adjust(left=0.1, bottom=0.25)
+
+    hist = IHistogramView(ax, tar, ntar, intr_data, bins=10)
+    vis = ISliderView(fig, canvas_view=hist, init_a=def_alpha, init_b=def_beta)
+    plt.show()
 
     # ===
     # FNR vs FPR: MFoM scores

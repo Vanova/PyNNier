@@ -75,13 +75,13 @@ def class_wise_tnt(p, y):
     return ts, nts
 
 
-# def array_tnt(p, y):
-#     """
-#     Return target part of scores and non-target
-#     p: 1D array, predicted scores
-#     y: 1D array, ground truth
-#     """
-#     return p[y > 0], p[y < 1]
+def array_tnt(p, y):
+    """
+    Return target part of scores and non-target
+    p: 1D array, predicted scores
+    y: 1D array, ground truth
+    """
+    return p[y > 0], p[y < 1]
 
 
 def pool_split_tnt(p_df, y_df):
