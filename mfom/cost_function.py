@@ -32,7 +32,7 @@ def mfom_eer_uvz(y_true, y_pred, alpha=3., beta=0.):
     fpr = np.sum(fp, axis=0, keepdims=True) / N
     # smooth_eer = fn + 0.1 * np.abs(fn - fp) # regularized
     # simplified smooth EER
-    smooth_eer = np.abs(fnr - fpr)
+    smooth_eer = np.abs(fnr + fpr)
     return fnr, fpr, np.mean(smooth_eer)
 
 

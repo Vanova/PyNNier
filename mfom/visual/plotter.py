@@ -5,7 +5,6 @@ import numpy as np
 from scipy.stats import norm
 from matplotlib import cm
 import plot_styles as plts
-
 plt.style.use('seaborn')
 
 
@@ -68,15 +67,15 @@ def view_roc_curve(ax, fpr, tpr, eer_val=None, roc_auc=None, color=None, title='
 def view_fnr_fpr_dist(ax, fnr, fpr, thresholds, eer_val):
     lw = 1
     ax.plot(thresholds, fpr, marker='o', linestyle='--', label='FPR')
-    ax.plot(thresholds, fnr, marker='o', linestyle='--', label='FNR')
-    ax.plot(thresholds, np.abs(fnr - fpr), marker='.', linestyle=':', alpha=0.8, lw=lw, label='|FNR - FPR|')
-    ax.plot(thresholds, np.abs(fnr + fpr), marker='.', linestyle=':', alpha=0.8, lw=lw, label='|FNR + FPR|')
+    ax.plot(thresholds, fnr, marker='s', linestyle='--', label='FNR')
+    ax.plot(thresholds, np.abs(fnr - fpr), marker='^', linestyle=':', alpha=0.8, lw=lw, label='|FNR - FPR|')
+    ax.plot(thresholds, np.abs(fnr + fpr), marker='.', linestyle=':', alpha=0.8, lw=lw, label='FNR + FPR')
 
     id_x = np.argmin(np.abs(fnr - fpr))
     ax.plot(thresholds[id_x], eer_val, linestyle=' ', marker='*', markersize=10, label='EER = %0.2f' % eer_val, color='red')
     ax.set_xlabel('Thresholds')
     ax.set_ylabel('Error rate')
-    ax.legend(loc="center right")
+    ax.legend(loc='best')
     return ax
 
 

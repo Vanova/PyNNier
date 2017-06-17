@@ -271,12 +271,12 @@ def mfom_smooth(y_true, y_score, alpha, beta):
 
 
 if __name__ == "__main__":
-    debug = True
+    debug = False
     # TODO REFACTORRRRR!!!!
     # P_df = TS.arr2DataFrame(TS.p_test)
     # Y_df = TS.arr2DataFrame(TS.y_test)
-    P_df = mfom_dcase.read_dcase('data/test_scores/results_fold1.txt')
-    Y_df = mfom_dcase.read_dcase('data/test_scores/y_true_fold1.txt')
+    P_df = mfom_dcase.read_dcase('data/test_scores/results_fold2.txt')
+    Y_df = mfom_dcase.read_dcase('data/test_scores/y_true_fold2.txt')
 
     # 1 - l_k scores
     loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values, alpha=3.)
