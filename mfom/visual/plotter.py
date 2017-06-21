@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import norm
 from matplotlib import cm
 import plot_styles as plts
-plt.style.use('seaborn')
+# plt.style.use('seaborn')
 
 
 def colored_table(ax, vals, row_lab, col_lab):
@@ -49,9 +49,11 @@ def view_histogram(ax, tar, nontar, bins=5, gaus_fit=True, min=0., max=1.):
     return ax
 
 
-def view_roc_curve(ax, fpr, tpr, eer_val=None, roc_auc=None, color=None, title='ROC curve'):
+def view_roc_curve(ax, fpr, tpr, label=None, eer_val=None, roc_auc=None, color=None, title=''):
     lw = 0.5
-    ax.plot(fpr, tpr, marker='o', linestyle='--', color=color, label='ROC curve (area = %0.2f)' % roc_auc)
+    if label is None:
+        label = 'ROC (area = %0.2f)' % roc_auc
+    ax.plot(fpr, tpr, marker='o', markersize=3, linestyle='--', color=color, label=label)
     ax.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
     ax.plot(eer_val, 1. - eer_val, linestyle=' ', marker='*', markersize=10, label='EER = %0.2f' % eer_val, color='red')
 
@@ -60,7 +62,7 @@ def view_roc_curve(ax, fpr, tpr, eer_val=None, roc_auc=None, color=None, title='
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
     ax.set_title(title)
-    ax.legend(loc="lower right")
+    ax.legend(loc="best")
     return ax
 
 
@@ -98,7 +100,7 @@ def show_curves(y, legend=None, labels=None, title=None):
     for it in y:
         plt.plot(it)
     if legend:
-        plt.legend(legend, loc='upper right')
+        plt.legend(legend, loc='best')
     if labels:
         plt.xlabel(labels[0], fontdict=plts.label_font)
         plt.ylabel(labels[1], fontdict=plts.label_font)
