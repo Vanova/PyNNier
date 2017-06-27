@@ -3,13 +3,13 @@ ticks_font = {
     'family': 'sans-serif',  # (cursive, fantasy, monospace, serif)
     'color': 'black',  # html hex or colour name
     'weight': 'normal',  # (normal, bold, bolder, lighter)
-    'size': 5,  # default value:12
+    'size': 7,  # default value:12
 }
 label_font = {
     'family': 'sans-serif',  # (cursive, fantasy, monospace, serif)
     'color': 'black',  # html hex or colour name
     'weight': 'normal',  # (normal, bold, bolder, lighter)
-    'size': 12,  # default value:12
+    'size': 14,  # default value:12
 }
 title_font = {
     'family': 'serif',

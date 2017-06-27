@@ -109,6 +109,7 @@ def plot_rocch_fnr_fpr(y_true, y_score):
     ax = fig.add_subplot(1, 1, 1, frameon=True)
     mfom_plt.view_fnr_fpr_dist(ax, fnr, fpr, thresholds, eer_val)
     fig.tight_layout()
+    fig.savefig('./misc/fnr_fpr_distr.png', dpi=200)
     plt.show()
 
 
@@ -271,7 +272,7 @@ def mfom_smooth(y_true, y_score, alpha, beta):
 
 
 if __name__ == "__main__":
-    debug = True
+    debug = False
     # TODO REFACTORRRRR!!!!
     # P_df = toy_sc.arr2DataFrame(toy_sc.p_test)
     # Y_df = toy_sc.arr2DataFrame(toy_sc.y_test)
@@ -287,15 +288,16 @@ if __name__ == "__main__":
     for i in range(1, 6):
         P_df = mfom_dcase.read_dcase('data/test_scores/results_fold%d.txt' % i)
         Y_df = mfom_dcase.read_dcase('data/test_scores/y_true_fold%d.txt' % i)
-        # loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values, alpha=3.)
-        # ls_df = toy_sc.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
+        loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=P_df.values, alpha=3.)
+        ls_df = toy_sc.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
         # loss_scores = mfom_cost._uvz_loss_scores(y_true=Y_df.values, y_pred=ls_df.values, alpha=3.)
         # ls_df = toy_sc.arr2DataFrame(1. - loss_scores, row_id=P_df.index, col_id=P_df.columns)
         # ===
         # ROC curves
         # ===
         # pooled scores
-        y_score, y_true = toy_sc.pool_scores(p_df=P_df, y_df=Y_df)
+        # y_score, y_true = toy_sc.pool_scores(p_df=P_df, y_df=Y_df)
+        y_score, y_true = toy_sc.pool_scores(p_df=ls_df, y_df=Y_df)
         # calculate ROC
         fpr, tpr, thresholds = sk_metrics.roc_curve(y_true, y_score, drop_intermediate=True)
         roc_auc = sk_metrics.auc(fpr, tpr)
@@ -304,7 +306,7 @@ if __name__ == "__main__":
         ax = fig.add_subplot(1, 1, 1, frameon=True)
         mfom_plt.view_roc_curve(ax, fpr, tpr, roc_auc=roc_auc, eer_val=eer_val, label='Fold#%d (area = %0.2f)' % (i, roc_auc))
     fig.tight_layout()
-    fig.savefig('./misc/roc_sigmoid.png', dpi=200)
+    fig.savefig('./misc/roc_mfom.png', dpi=200)
     plt.show()
 
 

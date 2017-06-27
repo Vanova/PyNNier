@@ -59,8 +59,8 @@ def view_roc_curve(ax, fpr, tpr, label=None, eer_val=None, roc_auc=None, color=N
 
     ax.set_xlim([0.0, 1.0])
     ax.set_ylim([0.0, 1.05])
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
+    ax.set_xlabel('False Positive Rate', fontdict=plts.label_font)
+    ax.set_ylabel('True Positive Rate', fontdict=plts.label_font)
     ax.set_title(title)
     ax.legend(loc="best")
     return ax
@@ -74,9 +74,9 @@ def view_fnr_fpr_dist(ax, fnr, fpr, thresholds, eer_val):
     ax.plot(thresholds, np.abs(fnr + fpr), marker='.', linestyle=':', alpha=0.8, lw=lw, label='FNR + FPR')
 
     id_x = np.argmin(np.abs(fnr - fpr))
-    ax.plot(thresholds[id_x], eer_val, linestyle=' ', marker='*', markersize=10, label='EER = %0.2f' % eer_val, color='red')
-    ax.set_xlabel('Thresholds')
-    ax.set_ylabel('Error rate')
+    ax.plot(thresholds[id_x], eer_val, linestyle=' ', marker='*', markersize=15, label='EER = %0.2f' % eer_val, color='red')
+    ax.set_xlabel('Thresholds', fontdict=plts.label_font)
+    ax.set_ylabel('Error rate', fontdict=plts.label_font)
     ax.legend(loc='best')
     return ax
 
