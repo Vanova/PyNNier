@@ -48,11 +48,11 @@ for iter in range(iterations):
         layer_1_delta = layer_2_delta.dot(weights_1_2.T) * layer_1 * (1 - layer_1)
 
         weights_0_1 -= alpha * layer_0.T.dot(layer_1_delta)
-        bias_0_1 -= np.mean(layer_1_delta, axis=0)
+        bias_0_1 -= alpha * np.mean(layer_1_delta, axis=0)
         weights_1_2 -= alpha * layer_1.T.dot(layer_2_delta)
-        bias_1_2 -= np.mean(layer_2_delta, axis=0)
+        bias_1_2 -= alpha * np.mean(layer_2_delta, axis=0)
         weights_2_3 -= alpha * layer_2.T.dot(layer_3_delta)
-        bias_2_3 -= np.mean(layer_3_delta, axis=0)
+        bias_2_3 -= alpha * np.mean(layer_3_delta, axis=0)
 
         error += (np.sum(np.abs(layer_3_delta)))
 
