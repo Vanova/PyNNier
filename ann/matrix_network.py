@@ -1,6 +1,7 @@
 """
 ~~~~~~~~~~~~~~
 Based on Michael Nielsen: Network2.py
+Matrix implementation with batch size, not per each sample
 """
 
 import json
@@ -12,10 +13,8 @@ from metrics import metrics
 import copy
 
 np.random.seed(777)
-random.seed(777)
 
 
-#### Main Network class
 class MatrixNetwork(object):
     def __init__(self, sizes, threshold_f1=0.5, cost=cf.QuadraticCost):
         """
@@ -206,10 +205,9 @@ class MatrixNetwork(object):
         f.close()
 
 
-#### Loading a Network
 def load(filename):
-    """Load a neural network from the file ``filename``.  Returns an
-    instance of Network.
+    """Load a neural network from the file ``filename``.
+    Returns an instance of Network.
     """
     f = open(filename, "r")
     data = json.load(f)
@@ -221,7 +219,6 @@ def load(filename):
     return net
 
 
-#### Miscellaneous metrics
 def vectorized_result(j):
     """Return a 10-dimensional unit vector with a 1.0 in the j'th position
     and zeroes elsewhere.  This is used to convert a digit (0...9)
