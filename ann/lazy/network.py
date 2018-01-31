@@ -3,13 +3,14 @@
 Based on Michael Nielsen
 """
 
+import copy
 import json
 import random
 import numpy as np
 from sklearn.metrics import mean_squared_error
+import nonlinearity as nonl
+import ann.lazy.cost_functions as cf
 from metrics import metrics
-import cost_functions as cf
-import copy
 
 np.random.seed(777)
 random.seed(777)
@@ -40,7 +41,7 @@ class Network(object):
         forward data through all layers.
         """
         for b, w in zip(self.biases, self.weights):
-            a = cf.sigmoid(np.dot(w, a) + b)
+            a = nonl.sigmoid(np.dot(w, a) + b)
         return a
 
     def propagate(self):
@@ -119,11 +120,11 @@ class Network(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation) + b
             zs.append(z)
-            activation = cf.sigmoid(z)
+            activation = nonl.sigmoid(z)
             activations.append(activation)
         loss = self.total_cost(activations[-1], y)
         # backward pass
-        delta = self.cost_derivative(activations[-1], y) * cf.sigmoid_prime(zs[-1])
+        delta = self.cost_derivative(activations[-1], y) * nonl.sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Note that the variable l in the loop below is used a little
@@ -134,7 +135,7 @@ class Network(object):
         # that Python can use negative indices in lists.
         for l in xrange(2, self.num_layers):
             z = zs[-l]
-            sp = cf.sigmoid_prime(z)
+            sp = nonl.sigmoid_prime(z)
             delta = np.dot(self.weights[-l + 1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l - 1].transpose())

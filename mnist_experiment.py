@@ -1,10 +1,9 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import time
-from utils import mnist_loader
+import matplotlib.pyplot as plt
+import numpy as np
 from ann import network
-from ann import mfom_network
-from ann import rnd_feedback_network
+from ann.lazy import mfom_network, rnd_feedback_network
+from utils import mnist_loader
 
 
 def plotter(data, xlim=None, ylim=None, title=None, xlab=None, ylab=None, fname=None):

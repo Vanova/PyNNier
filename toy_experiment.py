@@ -1,12 +1,16 @@
-import numpy as np
-import os
-import matplotlib.pyplot as plt
-from utils import toy_loader
-from sklearn import preprocessing
-import utils.plotters as viz
-from ann import network, matrix_network, mfom_network
-import ann.cost_functions as cf
 import copy
+import os
+
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn import preprocessing
+
+import ann.lazy.cost_functions as cf
+import utils.plotters as viz
+from ann import network
+from ann.lazy import mfom_network
+from ann.network import matrix_network
+from utils import toy_loader
 
 np.random.seed(777)
 

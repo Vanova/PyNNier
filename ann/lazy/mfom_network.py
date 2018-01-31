@@ -9,12 +9,13 @@ simple, easily readable, and easily modifiable.  It is not optimized,
 and omits many desirable features.
 """
 
-import random
-import json
-import numpy as np
-from metrics import metrics
-import ann.cost_functions as cf
 import copy
+import json
+import random
+import numpy as np
+import ann.lazy.cost_functions as cf
+import nonlinearity as nonl
+from metrics import metrics
 
 np.random.seed(777)
 random.seed(777)
@@ -52,7 +53,7 @@ class MFoMNetwork(object):
         :return: the outputs of the network only
         """
         for b, w in zip(self.biases, self.weights):
-            a = cf.sigmoid(np.dot(a, w) + b)
+            a = nonl.sigmoid(np.dot(a, w) + b)
         if class_loss_scores:
             a = 1.0 - cf.MFoMCost.class_loss_scores(a)
         return a
@@ -172,7 +173,7 @@ class MFoMNetwork(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(a, w) + b
             lin.append(z)
-            a = cf.sigmoid(z)
+            a = nonl.sigmoid(z)
             acts.append(a)
         return lin, acts
 
@@ -196,7 +197,7 @@ class MFoMNetwork(object):
 
         for l in xrange(2, self.num_layers):
             z = affines[-l]
-            sp = cf.sigmoid_prime(z)
+            sp = nonl.sigmoid_prime(z)
             delta = np.dot(delta, self.weights[-l + 1].transpose()) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(activations[-l - 1].transpose(), delta)
@@ -283,36 +284,36 @@ if __name__ == '__main__':
                 labels=["# of epochs", "value, %"],
                 title="MFoM micro F1 cost")
 
-# experiment:
-# feature_dim = 10
-# n_classes = 5
-# network = [10, 20, 5]
-# data: n_tr=2000, n_tst=500, n_dev=500
-# alpha: 10
-# a) MFoM (full-diag)
-# Epoch 499 training complete
-# Cost on training data (smooth F1): 12.2135291309
-# Error rate on training data (discrete F1): 8.93362169356
-# Cost on evaluation data (smooth F1): 13.1673488413
-# Error rate on evaluation data (discrete F1): 10.4180491042
-#
-# b) MFoM (off-diag)
-# Epoch 499 training complete
-# Cost on training data (smooth F1): 14.495517596
-# Error rate on training data (discrete F1): 11.6355293346
-# Cost on evaluation data (smooth F1): 15.5214520278
-# Error rate on evaluation data (discrete F1): 12.8947368421
-#
-# c) MFoM UvZ (full-diag jacobian) TODO something crazy with smooth F1
-# Epoch 499 training complete
-# Cost on training data (smooth F1): 53.1174496688
-# Error rate on training data (discrete F1): 12.1589654629
-# Cost on evaluation data (smooth F1): 53.0366585597
-# Error rate on evaluation data (discrete F1): 12.429022082
-#
-# d) MFoM UvZ (off-diag jacobian)
-# Epoch 499 training complete
-# Cost on training data (smooth F1): 53.2560674489
-# Error rate on training data (discrete F1): 11.4615865084
-# Cost on evaluation data (smooth F1): 53.1721201449
-# Error rate on evaluation data (discrete F1): 12.030075188
+    # experiment:
+    # feature_dim = 10
+    # n_classes = 5
+    # network = [10, 20, 5]
+    # data: n_tr=2000, n_tst=500, n_dev=500
+    # alpha: 10
+    # a) MFoM (full-diag)
+    # Epoch 499 training complete
+    # Cost on training data (smooth F1): 12.2135291309
+    # Error rate on training data (discrete F1): 8.93362169356
+    # Cost on evaluation data (smooth F1): 13.1673488413
+    # Error rate on evaluation data (discrete F1): 10.4180491042
+    #
+    # b) MFoM (off-diag)
+    # Epoch 499 training complete
+    # Cost on training data (smooth F1): 14.495517596
+    # Error rate on training data (discrete F1): 11.6355293346
+    # Cost on evaluation data (smooth F1): 15.5214520278
+    # Error rate on evaluation data (discrete F1): 12.8947368421
+    #
+    # c) MFoM UvZ (full-diag jacobian) TODO something crazy with smooth F1
+    # Epoch 499 training complete
+    # Cost on training data (smooth F1): 53.1174496688
+    # Error rate on training data (discrete F1): 12.1589654629
+    # Cost on evaluation data (smooth F1): 53.0366585597
+    # Error rate on evaluation data (discrete F1): 12.429022082
+    #
+    # d) MFoM UvZ (off-diag jacobian)
+    # Epoch 499 training complete
+    # Cost on training data (smooth F1): 53.2560674489
+    # Error rate on training data (discrete F1): 11.4615865084
+    # Cost on evaluation data (smooth F1): 53.1721201449
+    # Error rate on evaluation data (discrete F1): 12.030075188

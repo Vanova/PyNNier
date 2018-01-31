@@ -9,13 +9,14 @@ simple, easily readable, and easily modifiable.  It is not optimized,
 and omits many desirable features.
 """
 
-import random
-import math
-import time
 import json
+import math
+import random
+import time
 import numpy as np
+import nonlinearity as nonl
+import ann.lazy.cost_functions as cf
 from metrics import metrics
-import ann.cost_functions as cf
 
 
 class MifNetwork(object):
@@ -61,7 +62,7 @@ class MifNetwork(object):
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
-            a = cf.sigmoid(np.dot(w, a) + b)
+            a = nonl.sigmoid(np.dot(w, a) + b)
         return a
 
 
@@ -149,7 +150,7 @@ class MifNetwork(object):
         activations = [x]  # list to store all the activations, layer by layer
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation) + b
-            activation = cf.sigmoid(z)
+            activation = nonl.sigmoid(z)
             activations.append(activation)
         return activations
 
@@ -280,7 +281,6 @@ def load(filename):
 
 
 if __name__ == '__main__':
-    from lib import mnist_loader
     from lib import toy_loader
 
     # training_data, validation_data, test_data = mnist_loader.load_data_wrapper()

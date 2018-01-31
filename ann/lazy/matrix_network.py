@@ -1,16 +1,17 @@
 """
 ~~~~~~~~~~~~~~
 Based on Michael Nielsen: Network2.py
-Matrix implementation with batch size, not per each sample
+Matrix implementation with batch of samples, not per each sample
 """
 
+import copy
 import json
 import random
 import sys
 import numpy as np
-import cost_functions as cf
+import ann.lazy.cost_functions as cf
+import nonlinearity as nonl
 from metrics import metrics
-import copy
 
 np.random.seed(777)
 
@@ -45,7 +46,7 @@ class MatrixNetwork(object):
         :return: the output of the network
         """
         for b, w in zip(self.biases, self.weights):
-            a = cf.sigmoid(np.dot(a, w) + b)
+            a = nonl.sigmoid(np.dot(a, w) + b)
         return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -77,6 +78,7 @@ class MatrixNetwork(object):
         for j in xrange(epochs):
             random.shuffle(training_data)
             data_batches, label_batches = create_minibatches(training_data, mini_batch_size)
+            # training
             for X, Y in zip(data_batches, label_batches):
                 self._update_mini_batch(X, Y, eta,
                                         lmbda, len(training_data))
@@ -118,7 +120,7 @@ class MatrixNetwork(object):
         affines, activations = self._propagate(data_batch)
         # back propagate and calculate gradient on the whole batch
         nabla_b, nabla_w = self._backprop(affines, activations, labs_batch)
-
+        # TODO n: should be batch size, not the whole training set!!!
         self.biases = [b - eta * nb
                        for b, nb in zip(self.biases, nabla_b)]
         self.weights = [(1 - eta * (lmbda / n)) * w - eta * nw
@@ -136,7 +138,7 @@ class MatrixNetwork(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(a, w) + b
             lin.append(z)
-            a = cf.sigmoid(z)
+            a = nonl.sigmoid(z)
             acts.append(a)
         return lin, acts
 
@@ -157,7 +159,7 @@ class MatrixNetwork(object):
 
         for l in xrange(2, self.num_layers):
             z = affines[-l]
-            sp = cf.sigmoid_prime(z)
+            sp = nonl.sigmoid_prime(z)
             delta = np.dot(delta, self.weights[-l + 1].transpose()) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(activations[-l - 1].transpose(), delta)

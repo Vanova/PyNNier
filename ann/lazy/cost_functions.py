@@ -1,4 +1,5 @@
 import numpy as np
+import nonlinearity as nonl
 
 
 class QuadraticCost(object):
@@ -15,7 +16,7 @@ class QuadraticCost(object):
     @staticmethod
     def delta(z, a, y):
         """Return the error delta from the output layer."""
-        return (a - y) * sigmoid_prime(z)
+        return (a - y) * nonl.sigmoid_prime(z)
 
 
 class CrossEntropyCost(object):
@@ -77,7 +78,7 @@ class MFoMCost(object):
         nsamples = y.shape[0]
         npos = (y == 1).sum()
         # softmax normalization: ssigma in report
-        norms = softmax(a)
+        norms = nonl.softmax(a)
         # calculate class loss function l
         d = np.log(1. / (nclass - 1) * (1. / norms - 1.) + 1e-6)
         l = 1.0 / (1.0 + np.exp(-MFoMCost.alpha * d - MFoMCost.beta))
@@ -107,7 +108,7 @@ class MFoMCost(object):
         """
         nclass = a.shape[1]
         # softmax normalization: ssigma in report
-        norms = softmax(a)
+        norms = nonl.softmax(a)
         # calculate class loss function l
         d = np.log(1. / (nclass - 1) * (1. / norms - 1.) + 1e-6)
         # TODO L FUNCTION INVERSES SCORES!!!
@@ -169,7 +170,7 @@ class UnitsvsZerosMFoMCost(object):
         nclass = y.shape[1]
         npos = np.sum(y == 1)
         # softmax normalization: ssigma in report
-        norms = softmax(a)
+        norms = nonl.softmax(a)
 
         # choose the scores corresponding to unit and zero labels
         # units-vs-zeros misclassification measure
@@ -221,7 +222,7 @@ class UnitsvsZerosMFoMCost(object):
         # TODO fix to Units-vs-zeros!!!
         nclass = a.shape[1]
         # softmax normalization: ssigma in report
-        norms = softmax(a)
+        norms = nonl.softmax(a)
         # calculate class loss function l
         d = np.log(1. / (nclass - 1) * (1. / norms - 1.) + 1e-6)
         # d = -a + 0.5
@@ -246,31 +247,6 @@ class UnitsvsZerosMFoMCost(object):
         y_neg = np.invert(y_pos)
         W = scale_pos * y_pos - scale_neg * y_neg
         return np.dot(J, W.reshape((-1, 1))).T
-
-
-### Other functions
-def sigmoid(z):
-    return 1.0 / (1.0 + np.exp(-z))
-
-
-def sigmoid_linear(z, a=1., b=0.):
-    return 1.0 / (1.0 + np.exp(-a * z + b))
-
-
-def sigmoid_prime(z):
-    """Derivative of the sigmoid function."""
-    return sigmoid(z) * (1 - sigmoid(z))
-
-
-def softmax(z):
-    """
-    Normalization across the row vector
-    :param z: 2D array, smp x dim
-    """
-    zt = z.transpose()
-    x = zt - np.max(zt, axis=0)  # safe explosion trick
-    p = np.exp(x) / np.sum(np.exp(x), axis=0)
-    return p.transpose()
 
 
 def step(a, threshold=0.0):

@@ -13,6 +13,7 @@ and omits many desirable features.
 # Standard library
 import random
 import numpy as np
+import nonlinearity as nonl
 from sklearn.metrics import mean_squared_error
 
 
@@ -40,7 +41,7 @@ class RFANetwork(object):
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
         for b, w in zip(self.biases, self.weights):
-            a = sigmoid(np.dot(w, a) + b)
+            a = nonl.sigmoid(np.dot(w, a) + b)
         return a
 
     def SGD(self, training_data, epochs, mini_batch_size, eta,
@@ -108,11 +109,11 @@ class RFANetwork(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation) + b
             zs.append(z)
-            activation = sigmoid(z)
+            activation = nonl.sigmoid(z)
             activations.append(activation)
         # backward pass
         loss = self.cost_value(activations[-1], y)
-        delta = self.cost_derivative(activations[-1], y) * sigmoid_prime(zs[-1])
+        delta = self.cost_derivative(activations[-1], y) * nonl.sigmoid_prime(zs[-1])
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
 
@@ -120,7 +121,7 @@ class RFANetwork(object):
         # start from last layer l=-1
         for l in xrange(2, self.num_layers):
             z = zs[-l]
-            sp = sigmoid_prime(z)
+            sp = nonl.sigmoid_prime(z)
             delta = np.dot(self.rnd_feedback[-l + 1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l - 1].transpose())
@@ -146,19 +147,8 @@ class RFANetwork(object):
         return mean_squared_error(y_true=y, y_pred=output_activations)
 
 
-#### Miscellaneous functions
-def sigmoid(z):
-    """The sigmoid function."""
-    return 1.0 / (1.0 + np.exp(-z))
-
-
-def sigmoid_prime(z):
-    """Derivative of the sigmoid function."""
-    return sigmoid(z) * (1 - sigmoid(z))
-
-
 if __name__ == '__main__':
-    from lib import mnist_loader
+    from utils import mnist_loader
 
     training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
     print("MNIST data is loaded...")

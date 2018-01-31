@@ -46,7 +46,7 @@ output_dim = 12
 iterations = 1000
 x, y = data.generate_dataset(num_examples=num_examples, output_dim=output_dim)
 
-batch_size = 10
+batch_size = 256
 alpha = 0.1
 # layer_neurons = [len(x[0]), 128, 64, len(y[0])]
 input_dim = len(x[0])

@@ -1,0 +1,5 @@
+
+
+
+class BaseNetwork(object):
+    pass
