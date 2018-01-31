@@ -1,7 +1,6 @@
 """
 Synthetic Gradient network, summation of two binary digits
 """
-import sys
 import numpy as np
 import data
 import ann.lazy.nonlinearity as nonl
@@ -65,41 +64,45 @@ class DNI(object):
 if __name__ == '__main__':
     from utils import mnist_loader
 
-    data_type = 'toy'
+    # TODO add metric calculation
+    data_type = 'mnist'
 
     if data_type == 'toy':
         num_examples = 1000
         output_dim = 12
-        iterations = 1000
-        x, y = data.generate_dataset(num_examples=num_examples, output_dim=output_dim)
+        epoches = 1000
+        X, Y = data.generate_dataset(num_examples=num_examples, output_dim=output_dim)
 
         batch_size = 256
-        alpha = 0.1
-        input_dim = len(x[0])
+        learn_rate = 0.1
+        nsamples, input_dim = X.shape
         layer_1_dim = 64
         layer_2_dim = 32
-        output_dim = len(y[0])
+        nsamples, output_dim = Y.shape
     elif data_type == 'mnist':
-        training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+        X_train, Y_train, X_val, Y_val, X_test, Y_test = mnist_loader.load_matrices()
         print("MNIST data is loaded...")
         # MSE network with sigmoid output layer
-        epochs = 30
-        mini_batch = 10
-        learn_rate = 3.0
-        # net = RFANetwork([784, 30, 10])
+        epoches = 30
+        batch_size = 10
+        learn_rate = 3. # 3.0
+        nsamples, input_dim = X_train.shape
+        layer_1_dim = 64
+        layer_2_dim = 32
+        nsamples, output_dim = Y_train.shape
 
     # define 3 layers network with synthetic gradients weights
-    layer_1 = DNI(input_dim, layer_1_dim, nonl.sigmoid, nonl.sigmoid_derivative, alpha)
-    layer_2 = DNI(layer_1_dim, layer_2_dim, nonl.sigmoid, nonl.sigmoid_derivative, alpha)
-    layer_3 = DNI(layer_2_dim, output_dim, nonl.sigmoid, nonl.sigmoid_derivative, alpha)
+    layer_1 = DNI(input_dim, layer_1_dim, nonl.sigmoid, nonl.sigmoid_derivative, learn_rate)
+    layer_2 = DNI(layer_1_dim, layer_2_dim, nonl.sigmoid, nonl.sigmoid_derivative, learn_rate)
+    layer_3 = DNI(layer_2_dim, output_dim, nonl.sigmoid, nonl.sigmoid_derivative, learn_rate)
 
-    for iter in range(iterations):
+    for iter in range(epoches+1):
         error = 0
         synthetic_error = 0
 
-        for batch_i in range(int(len(x) / batch_size)):
-            batch_x = x[(batch_i * batch_size):(batch_i + 1) * batch_size]
-            batch_y = y[(batch_i * batch_size):(batch_i + 1) * batch_size]
+        for batch_i in range(int(nsamples / batch_size)):
+            batch_x = X_train[(batch_i * batch_size):(batch_i + 1) * batch_size]
+            batch_y = Y_train[(batch_i * batch_size):(batch_i + 1) * batch_size]
 
             # forward pass
             _, layer_1_out = layer_1.forward_and_synthetic_update(batch_x)
@@ -114,5 +117,5 @@ if __name__ == '__main__':
             # error += (np.sum(np.abs(delta_3 * layer_3_out * (1 - layer_3_out))))
             error += np.sum(np.abs(delta_3 * nonl.sigmoid_derivative(layer_3_out)))
             synthetic_error += (np.sum(np.abs(delta_2 - layer_2.syn_grad)))
-        if (iter % 100 == 99):
+        if (iter % 5 == 0):
             print("\rIter:" + str(iter) + " Loss:" + str(error) + " Synthetic Loss:" + str(synthetic_error))

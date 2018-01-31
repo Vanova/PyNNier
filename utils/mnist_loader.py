@@ -7,13 +7,9 @@ structures that are returned, see the doc strings for ``load_data``
 and ``load_data_wrapper``.  In practice, ``load_data_wrapper`` is the
 function usually called by our neural network code.
 """
-
-#### Libraries
-# Standard library
 import cPickle
 import gzip
-
-# Third-party libraries
+from sklearn import preprocessing
 import numpy as np
 
 
@@ -40,10 +36,34 @@ def load_data():
     That's done in the wrapper function ``load_data_wrapper()``, see
     below.
     """
-    f = gzip.open('data/mnist.pkl.gz', 'rb')
+    f = gzip.open('../data/mnist.pkl.gz', 'rb')
     training_data, validation_data, test_data = cPickle.load(f)
     f.close()
     return (training_data, validation_data, test_data)
+
+
+def load_matrices():
+    (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_data()
+    X_train = X_train.astype('float32')
+    X_val = X_val.astype('float32')
+    X_test = X_test.astype('float32')
+    X_train /= 255
+    X_val /= 255
+    X_test /= 255
+    y_train = y_train[:, np.newaxis]
+    y_val = y_val[:, np.newaxis]
+    y_test = y_test[:, np.newaxis]
+
+    le = preprocessing.OneHotEncoder()
+    Y_train = le.fit_transform(y_train).toarray()
+    Y_val = le.fit_transform(y_val).toarray()
+    Y_test = le.fit_transform(y_test).toarray()
+
+    print(X_train.shape, 'train samples')
+    print(X_val.shape, 'val samples')
+    print(X_test.shape, 'test samples')
+
+    return X_train, Y_train, X_val, Y_val, X_test, Y_test
 
 
 def load_data_wrapper():
