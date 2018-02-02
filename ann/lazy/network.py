@@ -160,7 +160,7 @@ class Network(object):
             p = cf.step(self.feedforward(x), self.threshold_f1)
             predicts.append(p)
             refs.append(y)
-        return metrics.micro_f1(refs=refs, predicts=predicts, accuracy=False)
+        return metrics.micro_f1(y_true=refs, y_pred=predicts, accuracy=False)
 
     def cost_derivative(self, output_activations, y):
         """Return the vector of partial derivatives \partial C_x /

@@ -176,7 +176,7 @@ class MatrixNetwork(object):
             p = cf.step(self.feedforward(x.T), self.threshold_f1)
             predicts.append(p)
             refs.append(y.T)
-        return metrics.micro_f1(refs=refs, predicts=predicts, accuracy=False)
+        return metrics.micro_f1(y_true=refs, y_pred=predicts, accuracy=False)
 
     def total_cost(self, data, lmbda, convert=False):
         """Return the total cost for the data set ``data``.  The flag
