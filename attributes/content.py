@@ -45,7 +45,7 @@ if __name__ == '__main__':
     wnd = 0.025
     shift = 2
     n_jobs = 20
-    debug = True
+    debug = False
 
     if debug:
         file_name = '../utils/kaldi/place.ark'
