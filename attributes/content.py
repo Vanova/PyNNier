@@ -4,8 +4,11 @@ Speech attributes content analysis in NIST LRE 2017 dataset
 import os
 import os.path as path
 import numpy as np
-import datetime
+import metrics.metrics as metr
 import utils.kaldi.io as kio
+import pandas as pd
+import matplotlib.pyplot as plt
+plt.style.use('seaborn')
 
 MANNER_CLS = []
 PLACE_CLS = []
@@ -45,10 +48,10 @@ if __name__ == '__main__':
     wnd = 0.025
     shift = 2
     n_jobs = 20
-    debug = False
+    debug = True
 
     if debug:
-        file_name = '../utils/kaldi/place.ark'
+        file_name = '../utils/kaldi/manner.ark'
         arks = kio.ArkReader(file_name)
         cnt_arks = 0
         for ut, feat in arks.next_ark():
@@ -71,8 +74,25 @@ if __name__ == '__main__':
         sec = nframes * wnd/shift
         print('Total length: %s' % str(sec / 3600.))
 
-        # distribution
+        # distribution: mean of file and across files
+        # TODO think about sampling
+        arks = kio.ArkReader(file_name)
+        all_mean = np.zeros((1, 8))
+        cnt_arks = 0
+        for ut, feat in arks.next_ark():
+            bin = metr.step(feat, 0.5)
+            m = np.mean(bin, axis=0, keepdims=True)
+            all_mean += m
+            cnt_arks += 1
+        # save calculation: tot_mean /= cnt_arks
+        all_mean = np.exp(np.log(all_mean) - np.log(cnt_arks))
+        print(all_mean)
 
+        # plot total mean per each language
+        df = pd.DataFrame(all_mean, columns=ATTRIBUTES_CLS['manner'])
+        df.plot(kind='barh', stacked=True)
+        plt.show()
+        plt.savefig('manner.png')
     else:
         # loop through language clusters folder and calculate stats per language
         lang_dirs = np.sort(os.listdir(root_path))
@@ -96,6 +116,6 @@ if __name__ == '__main__':
             sec = nframes * wnd / shift
             print('Total length: %s' % str(sec / 3600.))
             # ===
-            # distribution per each language
+            # distribution per each language and plotting
             # ===
 
