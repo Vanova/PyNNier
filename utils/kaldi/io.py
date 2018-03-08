@@ -8,6 +8,12 @@ class ArkReader(object):
     def __init__(self, data_file):
         self.data_file = data_file
 
+    @staticmethod
+    def grep(data_file, pattern='['):
+        with open(data_file, 'r') as file:
+                match = [line for line in file if pattern in line]
+        return match
+
     def next_ark(self):
         """
         Read file with arks,
