@@ -4,6 +4,7 @@ Speech attributes content analysis in NIST LRE 2017 dataset
 import os
 import os.path as path
 import numpy as np
+import datetime
 import utils.kaldi.io as kio
 
 MANNER_CLS = []
@@ -40,23 +41,35 @@ def scan_folder(lang_dir, attrib_cls):
 
 if __name__ == '__main__':
     root_path = '/sipudata/pums/ivan/projects_data/mulan_lre17/train'
+    # window 25ms, shift 10ms
+    wnd = 0.025
+    shift = 2
     n_jobs = 20
     debug = False
 
     if debug:
-        file_name = '../utils/kaldi/test.ark'
-        ark_iter = kio.ArkReader(file_name)
+        file_name = '../utils/kaldi/place.ark'
+        arks = kio.ArkReader(file_name)
         cnt_arks = 0
-        for ut, feat in ark_iter.next_ark():
+        for ut, feat in arks.next_ark():
             cnt_arks += 1
             print('File: %s' % ut)
             print(feat.shape)
         print('Total: %d' % cnt_arks)
 
+        # fast calculate number of utterances
         cnt_arks = 0
         match = kio.ArkReader.grep(file_name, '[')
         cnt_arks += len(match)
         print('Total: %d' % cnt_arks)
+
+        # length in hours
+        arks = kio.ArkReader(file_name)
+        nframes = 0
+        for ut, feat in arks.next_ark():
+            nframes += feat.shape[0]
+        sec = nframes * wnd/shift
+        print('Total length: %s' % str(datetime.timedelta(seconds=sec)))
 
     else:
         # loop through language clusters folder and calculate stats per language
@@ -69,10 +82,17 @@ if __name__ == '__main__':
             for f in scan_folder(ldir, 'manner'):
                 match = kio.ArkReader.grep(path.join(root_path, f), '[')
                 cnt_arks += len(match)
-            print('Total utterances in language: %d' % cnt_arks)
+            print('Utterances: %d' % cnt_arks)
             # ===
-            # - hours per each language
+            # hours per each language
             # ===
+            nframes = 0
+            for f in scan_folder(ldir, 'manner'):
+                arks = kio.ArkReader(path.join(root_path, f))
+                for ut, feat in arks.next_ark():
+                    nframes += feat.shape[0]
+            sec = nframes * wnd / shift
+            print('Total length: %s' % str(datetime.timedelta(seconds=sec)))
 
 
             # cnt_arks = 0
