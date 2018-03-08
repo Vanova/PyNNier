@@ -36,7 +36,7 @@ class ArkReader(object):
                 else:
                     # read features
                     feats.append(line.strip().split())
-        print("Read %d files..." % cnt)
+        print("Read %d files from: %s" % (cnt, self.data_file))
 
 
 def read_ark_file(file_name):

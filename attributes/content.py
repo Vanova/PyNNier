@@ -46,17 +46,21 @@ if __name__ == '__main__':
     if debug:
         file_name = '../utils/kaldi/test.ark'
         ark_iter = kio.ArkReader(file_name)
-        for id, arr in ark_iter.next_ark():
-            print('File: %s' % id)
-            print(arr.shape)
+        for ut, feat in ark_iter.next_ark():
+            print('File: %s' % ut)
+            print(feat.shape)
     else:
         # loop through language clusters folder and calculate stats per language
         lang_dirs = np.sort(os.listdir(root_path))
         for ldir in lang_dirs:
-            flist = scan_folder(ldir, 'manner')
 
-            for f in flist:
+            # analise every lang cluster
+            cnt_arks = 0
+            for f in scan_folder(ldir, 'manner'):
                 ark_iter = kio.ArkReader(path.join(root_path, f))
-                for id, arr in ark_iter.next_ark():
-                    print('File: %s' % id)
-                    print(arr.shape)
+                for ut, feat in ark_iter.next_ark():
+                    cnt_arks += 1
+            print('Total utterances in language: %d' % cnt_arks)
+
+            # print('File: %s' % ut)
+            # print(feat.shape)
