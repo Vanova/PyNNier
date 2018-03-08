@@ -91,8 +91,9 @@ if __name__ == '__main__':
         # plot total mean per each language
         df = pd.DataFrame(all_mean, columns=ATTRIBUTES_CLS['manner'])
         df.plot(kind='barh', stacked=True)
-        plt.show()
+        # plt.show()
         plt.savefig('manner.png')
+
     else:
         # loop through language clusters folder and calculate stats per language
         lang_dirs = np.sort(os.listdir(root_path))
