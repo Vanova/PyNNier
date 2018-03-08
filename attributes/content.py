@@ -48,8 +48,8 @@ if __name__ == '__main__':
     # window 25ms, shift 10ms
     wnd = 0.025
     shift = 2
-    n_jobs = 20
-    debug = False
+    n_jobs = 1
+    debug = True
 
     if debug:
         file_name = '../utils/kaldi/manner.ark'
@@ -90,9 +90,9 @@ if __name__ == '__main__':
         print(all_mean)
 
         # plot total mean per each language
-        df = pd.DataFrame(all_mean, columns=ATTRIBUTES_CLS['manner'])
+        df = pd.DataFrame(np.array([all_mean.squeeze(), all_mean.squeeze()]), columns=ATTRIBUTES_CLS['manner'])
         df.plot(kind='barh', stacked=True)
-        plt.ylabel('lang')
+        plt.yticks(range(2), ['lang1', 'lang2'])
         # plt.show()
         plt.savefig('manner.png')
 
@@ -123,7 +123,7 @@ if __name__ == '__main__':
             # distribution per each language and plotting
             # ===
             cnt_arks = 0
-            all_mean = np.zeros((1, 8))
+            all_mean = np.zeros((1, len(ATTRIBUTES_CLS['manner'])))
             for f in scan_folder(ldir, 'manner'):
                 arks = kio.ArkReader(path.join(root_path, f))
                 for ut, feat in arks.next_ark():
@@ -134,10 +134,10 @@ if __name__ == '__main__':
             # average across all files
             # save calculation: tot_mean /= cnt_arks
             all_mean = np.exp(np.log(all_mean) - np.log(cnt_arks))
-            lang_mean.append(all_mean)
+            lang_mean.append(all_mean.squeeze())
             print(all_mean)
         # plot total mean per each language
-        df = pd.DataFrame(lang_mean, columns=ATTRIBUTES_CLS['manner'])
+        df = pd.DataFrame(np.array(lang_mean), columns=ATTRIBUTES_CLS['manner'])
         df.plot(kind='barh', stacked=True)
-        plt.yticks(lang_dirs)
+        plt.yticks(range(len(lang_dirs)), lang_dirs)
         plt.savefig('manner.png')
