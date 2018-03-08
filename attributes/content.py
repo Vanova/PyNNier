@@ -45,7 +45,7 @@ if __name__ == '__main__':
     wnd = 0.025
     shift = 2
     n_jobs = 20
-    debug = False
+    debug = True
 
     if debug:
         file_name = '../utils/kaldi/place.ark'
@@ -69,7 +69,9 @@ if __name__ == '__main__':
         for ut, feat in arks.next_ark():
             nframes += feat.shape[0]
         sec = nframes * wnd/shift
-        print('Total length: %s' % str(datetime.timedelta(seconds=sec)))
+        print('Total length: %s' % str(sec / 3600.))
+
+        # distribution
 
     else:
         # loop through language clusters folder and calculate stats per language
@@ -92,15 +94,8 @@ if __name__ == '__main__':
                 for ut, feat in arks.next_ark():
                     nframes += feat.shape[0]
             sec = nframes * wnd / shift
-            print('Total length: %s' % str(datetime.timedelta(seconds=sec)))
+            print('Total length: %s' % str(sec / 3600.))
+            # ===
+            # distribution per each language
+            # ===
 
-
-            # cnt_arks = 0
-            # for f in scan_folder(ldir, 'manner'):
-            #     ark_iter = kio.ArkReader(path.join(root_path, f))
-            #     for ut, feat in ark_iter.next_ark():
-            #         cnt_arks += 1
-            # print('Total utterances in language: %d' % cnt_arks)
-
-            # print('File: %s' % ut)
-            # print(feat.shape)
