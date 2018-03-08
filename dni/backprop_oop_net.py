@@ -1,6 +1,8 @@
 import data
 import sys
 import numpy as np
+import metrics.metrics as metr
+import utils.plotters as ut_plt
 
 
 class Layer(object):
@@ -41,44 +43,78 @@ def sigmoid_out2deriv(x):
     return x * (1 - x)
 
 
-num_examples = 1000
-output_dim = 12
-iterations = 1000
-x, y = data.generate_dataset(num_examples=num_examples, output_dim=output_dim)
+def accuracy(ref, pred):
+    """
+    Return micro F1 error on test data
+    :ref: reference, 2D array
+    :pred: prediction, 2D array
+    """
+    # p = np.argmax(pred, axis=1)
+    # p = cf.step(pred, threshold=0.5)
+    # return metr.micro_f1(y_true=ref, y_pred=p, accuracy=False)
+    return metr.pooled_accuracy(y_true=ref, y_pred=pred)
 
-batch_size = 256
-alpha = 0.1
-# layer_neurons = [len(x[0]), 128, 64, len(y[0])]
-input_dim = len(x[0])
-layer_1_dim = 128
-layer_2_dim = 64
-output_dim = len(y[0])
 
-layer_1 = Layer(input_dim, layer_1_dim, sigmoid, sigmoid_out2deriv)
-layer_2 = Layer(layer_1_dim, layer_2_dim, sigmoid, sigmoid_out2deriv)
-layer_3 = Layer(layer_2_dim, output_dim, sigmoid, sigmoid_out2deriv)
+if __name__ == '__main__':
+    from utils import mnist_loader
 
-for i in range(iterations):
-    error = 0
-    for batch_i in range(int(len(x) / batch_size)):
-        batch_x = x[(batch_i * batch_size): (batch_i + 1) * batch_size]
-        batch_y = y[(batch_i * batch_size): (batch_i + 1) * batch_size]
+    data_type = 'mnist'
 
-        layer_1_out = layer_1.forward(batch_x)
+    if data_type == 'toy':
+        num_examples = 1000
+        output_dim = 12
+        iterations = 1000
+        x, y = data.generate_dataset(num_examples=num_examples, output_dim=output_dim)
+    elif data_type == 'mnist':
+        X_train, Y_train, X_val, Y_val, X_test, Y_test = mnist_loader.load_matrices()
+        print("MNIST data is loaded...")
+        epoches = 100
+        batch_size = 10
+        learn_rate = 3.  # 3.0
+        nsamples, input_dim = X_train.shape
+        layer_1_dim = 32
+        layer_2_dim = 16
+        nsamples, output_dim = Y_train.shape
+
+    layer_1 = Layer(input_dim, layer_1_dim, sigmoid, sigmoid_out2deriv)
+    layer_2 = Layer(layer_1_dim, layer_2_dim, sigmoid, sigmoid_out2deriv)
+    layer_3 = Layer(layer_2_dim, output_dim, sigmoid, sigmoid_out2deriv)
+
+    total_acc, total_error = [], []
+    for i in range(epoches):
+        error = 0
+        for batch_i in range(int(len(X_train) / batch_size)):
+            batch_x = X_train[(batch_i * batch_size): (batch_i + 1) * batch_size]
+            batch_y = Y_train[(batch_i * batch_size): (batch_i + 1) * batch_size]
+
+            layer_1_out = layer_1.forward(batch_x)
+            layer_2_out = layer_2.forward(layer_1_out)
+            layer_3_out = layer_3.forward(layer_2_out)
+
+            layer_3_delta = layer_3_out - batch_y
+            layer_2_delta = layer_3.backward(layer_3_delta)
+            layer_1_delta = layer_2.backward(layer_2_delta)
+            layer_1.backward(layer_1_delta)
+
+            layer_1.update()
+            layer_2.update()
+            layer_3.update()
+
+            error += np.linalg.norm(layer_3_delta) / batch_size
+        if (i % 5 == 0):
+            print("\rIter:" + str(i) + " error:" + str(error))
+
+        layer_1_out = layer_1.forward(X_val)
         layer_2_out = layer_2.forward(layer_1_out)
         layer_3_out = layer_3.forward(layer_2_out)
-
-        layer_3_delta = layer_3_out - batch_y
-        layer_2_delta = layer_3.backward(layer_3_delta)
-        layer_1_delta = layer_2.backward(layer_2_delta)
-        layer_1.backward(layer_1_delta)
-
-        layer_1.update()
-        layer_2.update()
-        layer_3.update()
-
-        error += np.sum(np.abs(layer_3_delta * sigmoid_out2deriv(layer_3_out)))
-
-    sys.stdout.write("\rIter:" + str(i) + " Loss:" + str(error))
-    if i % 100 == 99:
-        print("")
+        acc = accuracy(ref=Y_val, pred=layer_3_out)
+        total_acc.append(acc)
+        print(total_acc[-1])
+    ut_plt.show_curves([total_acc],
+                       legend=['val error acc'],
+                       labels=["# of epochs", "value, %"],
+                       title='Error accuracy, sigmoid scores')
+    # ut_plt.show_curves([total_cost_1, total_cost_2],
+    #                    legend=['syn_error_1', 'syn_error_2'],
+    #                    labels=["# of epochs", "error value"],
+    #                    title='Error, sigmoid scores')

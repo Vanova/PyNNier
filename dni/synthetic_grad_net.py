@@ -29,7 +29,7 @@ class DNI(object):
         self.bias_dni = 0.2 * np.random.randn(output_dim) - 0.1
         self.alpha = alpha
 
-    def forward_and_synthetic_update(self, input):
+    def forward_and_synthetic_update(self, input, update=True):
         """
         Network forward pass AND update main network weights,
          using Synthetic Gradient
@@ -41,20 +41,22 @@ class DNI(object):
         self.input = input
         # network forward pass
         self.output = self.nonlin(self.input.dot(self.weights) + self.bias)
-
-        # ***
-        # generate synthetic gradient: linear regression
-        # ***
-        # self.syn_grad = self.output.dot(self.weights_dni) + self.bias_dni
-        # ***
-        # generate synthetic gradient: logistic regression
-        # ***
-        self.syn_grad = self.nonlin(self.output.dot(self.weights_dni) + self.bias_dni)
-        # update weights of the main network, using synthetic gradient
-        delta_weights = self.syn_grad * self.nonlin_deriv(self.output)
-        self.weights -= self.alpha * self.input.T.dot(delta_weights)
-        self.bias -= self.alpha * np.mean(delta_weights)
-        return delta_weights.dot(self.weights.T), self.output
+        if not update:
+            return self.output
+        else:
+            # ***
+            # generate synthetic gradient: linear regression
+            # ***
+            self.syn_grad = self.output.dot(self.weights_dni) + self.bias_dni
+            # ***
+            # generate synthetic gradient: logistic regression
+            # ***
+            # self.syn_grad = self.nonlin(self.output.dot(self.weights_dni) + self.bias_dni)
+            # update weights of the main network, using synthetic gradient
+            delta_weights = self.syn_grad * self.nonlin_deriv(self.output)
+            self.weights -= self.alpha * self.input.T.dot(delta_weights)
+            self.bias -= self.alpha * np.mean(delta_weights)
+            return delta_weights.dot(self.weights.T), self.output
 
     def forward(self, input):
         """ Calculate forward network activated signal"""
@@ -66,13 +68,19 @@ class DNI(object):
         """
         backprop for DNI network, true_grad comes from the above layer
         """
-        alpha = self.alpha # 10 * self.alpha
         # linear regression generator
-        # syn_grad_delta = (self.syn_grad - true_grad)
+        syn_grad_delta = self.syn_grad - true_grad
         # logistic regression generator
-        syn_grad_delta = (self.syn_grad - true_grad) * self.nonlin_deriv(self.syn_grad)
+        # syn_grad_delta = (self.syn_grad - true_grad) * self.nonlin_deriv(self.syn_grad)
         self.weights_dni -= self.alpha * self.output.T.dot(syn_grad_delta)
         self.bias_dni -= self.alpha * np.mean(syn_grad_delta, axis=0)
+
+    def normal_update(self, true_gradient):
+        grad = true_gradient * self.nonlin_deriv(self.output)
+
+        self.weights -= self.alpha * self.input.T.dot(grad)
+        self.bias -= self.alpha * np.mean(grad, axis=0)
+        return grad.dot(self.weights.T)
 
 
 def accuracy(ref, pred):
@@ -107,12 +115,12 @@ if __name__ == '__main__':
     elif data_type == 'mnist':
         X_train, Y_train, X_val, Y_val, X_test, Y_test = mnist_loader.load_matrices()
         print("MNIST data is loaded...")
-        epoches = 100
-        batch_size = 256
-        learn_rate = .1  # 3.0
+        epoches = 500
+        batch_size = 10
+        learn_rate = .00001  # 3.0
         nsamples, input_dim = X_train.shape
-        layer_1_dim = 64
-        layer_2_dim = 32
+        layer_1_dim = 32
+        layer_2_dim = 16
         nsamples, output_dim = Y_train.shape
 
     # define 3 layers network with synthetic gradients weights
@@ -123,28 +131,38 @@ if __name__ == '__main__':
     total_acc, total_cost_1, total_cost_2 = [], [], []
 
     for iter in range(epoches + 1):
+        real_error = 0
         syn_error_2 = 0
         syn_error_1 = 0
 
         for batch_i in range(int(nsamples / batch_size)):
             batch_x = X_train[(batch_i * batch_size):(batch_i + 1) * batch_size]
             batch_y = Y_train[(batch_i * batch_size):(batch_i + 1) * batch_size]
-            # forward pass
-            _, layer_1_out = layer_1.forward_and_synthetic_update(batch_x)
-            delta_1, layer_2_out = layer_2.forward_and_synthetic_update(layer_1_out)
-            delta_2, layer_3_out = layer_3.forward_and_synthetic_update(layer_2_out)
-            # backward pass
-            # TODO use 2 SG generators
-            delta_3 = layer_3_out - batch_y
-            layer_3.update_synthetic_weights(delta_3)
-            layer_2.update_synthetic_weights(delta_2)
-            layer_1.update_synthetic_weights(delta_1)
+            # # forward pass
+            # _, layer_1_out = layer_1.forward_and_synthetic_update(batch_x)
+            # delta_1, layer_2_out = layer_2.forward_and_synthetic_update(layer_1_out)
+            # delta_2, layer_3_out = layer_3.forward_and_synthetic_update(layer_2_out)
+            # # backward pass
+            # # TODO use 2 SG generators
+            # delta_3 = layer_3_out - batch_y
+            # layer_3.update_synthetic_weights(delta_3)
+            # layer_2.update_synthetic_weights(delta_2)
+            # layer_1.update_synthetic_weights(delta_1)
 
-            # error += np.sum(np.abs(delta_3 * nonl.sigmoid_derivative(layer_3_out)))
-            syn_error_2 += np.linalg.norm(delta_3) / batch_size
-            syn_error_1 += np.linalg.norm(delta_2 - layer_2.syn_grad) / batch_size
+            _, layer_1_out = layer_1.forward_and_synthetic_update(batch_x)
+            delta_dni_1, layer_2_out = layer_2.forward_and_synthetic_update(layer_1_out)
+            layer_3_out = layer_3.forward_and_synthetic_update(layer_2_out, False)
+
+            delta_3 = layer_3_out - batch_y
+            delta_2 = layer_3.normal_update(delta_3)
+            layer_2.update_synthetic_weights(delta_2)
+            layer_1.update_synthetic_weights(delta_dni_1)
+
+            real_error += np.linalg.norm(delta_3) / batch_size
+            syn_error_2 += np.linalg.norm(delta_2 - layer_2.syn_grad) / batch_size
+            syn_error_1 += np.linalg.norm(delta_dni_1 - layer_1.syn_grad) / batch_size
         if (iter % 5 == 0):
-            print("\rIter:" + str(iter) + " Synthetic_2:" + str(syn_error_2) + " Synthetic_1:" + str(syn_error_1))
+            print("\rIter:" + str(iter) + " Real_error:" + str(real_error) + " Synthetic_2:" + str(syn_error_2) + " Synthetic_1:" + str(syn_error_1))
 
             # accuracy calculation on VAL dataset
         layer_1_out = layer_1.forward(X_val)
@@ -161,5 +179,5 @@ if __name__ == '__main__':
                        title='Error accuracy, sigmoid scores')
     ut_plt.show_curves([total_cost_1, total_cost_2],
                        legend=['syn_error_1', 'syn_error_2'],
-                       labels=["# of epochs", "value, %"],
+                       labels=["# of epochs", "error value"],
                        title='Error, sigmoid scores')

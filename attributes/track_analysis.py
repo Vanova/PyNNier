@@ -2,10 +2,9 @@ import numpy as np
 from scipy import signal
 from scipy.io import wavfile
 import matplotlib.pyplot as plt
-import plotly.graph_objs as go
-import plotly.tools as tls
-import pandas as pd
 import utils.kaldi.io as kio
+
+ATTRIBUTE_CLS = ['fricative', 'glide', 'nasal', 'oth', 'sil', 'stop', 'voiced', 'vowel']
 
 filename = './data/GEcall-101-G.story-bt.wav'
 sample_rate, samples = wavfile.read(filename)
@@ -57,7 +56,6 @@ signal_time = np.linspace(0, length, N_sig)
 spec_time = times[:N_spec]
 
 # attribute probabilities
-attributes = ['fricative', 'glide', 'nasal', 'oth', 'sil', 'stop', 'voiced', 'vowel']
 Y_prob = load_scores('./data/GEcall-101-G_res.prob')
 Y_prob = Y_prob[:N_spec, :]
 # phone alignments
@@ -82,7 +80,7 @@ axs[1].set_xticks([], [])
 plot_phone_alignment(axs[1], phone_ali=ali['"*/GEcall-101-G.story-bt.lab"'])
 
 cnt = 2
-for i, lab in enumerate(attributes):
+for i, lab in enumerate(ATTRIBUTE_CLS):
     if (lab is not 'oth') and (lab is not 'sil'):
         axs[cnt].plot(spec_time, Y_prob[:, i])
         axs[cnt].set_ylabel(lab, rotation=60)
