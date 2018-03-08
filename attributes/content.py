@@ -8,6 +8,7 @@ import metrics.metrics as metr
 import utils.kaldi.io as kio
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 plt.style.use('seaborn')
 
 MANNER_CLS = []
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     wnd = 0.025
     shift = 2
     n_jobs = 20
-    debug = True
+    debug = False
 
     if debug:
         file_name = '../utils/kaldi/manner.ark'
@@ -91,32 +92,52 @@ if __name__ == '__main__':
         # plot total mean per each language
         df = pd.DataFrame(all_mean, columns=ATTRIBUTES_CLS['manner'])
         df.plot(kind='barh', stacked=True)
+        plt.ylabel('lang')
         # plt.show()
         plt.savefig('manner.png')
 
     else:
         # loop through language clusters folder and calculate stats per language
         lang_dirs = np.sort(os.listdir(root_path))
+        lang_mean = []
         for ldir in lang_dirs:
             # ===
             # number of utterance per language
             # ===
-            cnt_arks = 0
-            for f in scan_folder(ldir, 'manner'):
-                match = kio.ArkReader.grep(path.join(root_path, f), '[')
-                cnt_arks += len(match)
-            print('Utterances: %d' % cnt_arks)
-            # ===
-            # hours per each language
-            # ===
-            nframes = 0
-            for f in scan_folder(ldir, 'manner'):
-                arks = kio.ArkReader(path.join(root_path, f))
-                for ut, feat in arks.next_ark():
-                    nframes += feat.shape[0]
-            sec = nframes * wnd / shift
-            print('Total length: %s' % str(sec / 3600.))
+            # cnt_arks = 0
+            # for f in scan_folder(ldir, 'manner'):
+            #     match = kio.ArkReader.grep(path.join(root_path, f), '[')
+            #     cnt_arks += len(match)
+            # print('Utterances: %d' % cnt_arks)
+            # # ===
+            # # hours per each language
+            # # ===
+            # nframes = 0
+            # for f in scan_folder(ldir, 'manner'):
+            #     arks = kio.ArkReader(path.join(root_path, f))
+            #     for ut, feat in arks.next_ark():
+            #         nframes += feat.shape[0]
+            # sec = nframes * wnd / shift
+            # print('Total length: %s' % str(sec / 3600.))
             # ===
             # distribution per each language and plotting
             # ===
-
+            cnt_arks = 0
+            all_mean = np.zeros((1, 8))
+            for f in scan_folder(ldir, 'manner'):
+                arks = kio.ArkReader(path.join(root_path, f))
+                for ut, feat in arks.next_ark():
+                    bin = metr.step(feat, 0.5)
+                    m = np.mean(bin, axis=0, keepdims=True)
+                    all_mean += m
+                    cnt_arks += 1
+            # average across all files
+            # save calculation: tot_mean /= cnt_arks
+            all_mean = np.exp(np.log(all_mean) - np.log(cnt_arks))
+            lang_mean.append(all_mean)
+            print(all_mean)
+        # plot total mean per each language
+        df = pd.DataFrame(lang_mean, columns=ATTRIBUTES_CLS['manner'])
+        df.plot(kind='barh', stacked=True)
+        plt.yticks(lang_dirs)
+        plt.savefig('manner.png')
