@@ -56,7 +56,7 @@ if __name__ == '__main__':
             flist = scan_folder(ldir, 'manner')
 
             for f in flist:
-                ark_iter = kio.ArkReader(f)
+                ark_iter = kio.ArkReader(path.join(root_path, f))
                 for id, arr in ark_iter.next_ark():
                     print('File: %s' % id)
                     print(arr.shape)
