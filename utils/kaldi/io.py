@@ -4,7 +4,46 @@ START_ARK_MARK = '['
 END_ARK_MARK = ']'
 
 
+class ArkReader(object):
+    def __init__(self, data_file):
+        self.data_file = data_file
+
+    def next_ark(self):
+        """
+        Read file with arks,
+        return every ark file one-by-one
+        """
+        cnt = 0
+        with open(self.data_file, 'r') as file:
+            utt = ''
+            feats = []
+            for line in file:
+                # start of the features
+                if '[' in line:
+                    utt = line.strip().split()
+                    utt.remove(START_ARK_MARK)
+                    utt = utt[0]
+                    cnt += 1
+                # end of the features
+                elif ']' in line:
+                    tmp = line.strip().split()
+                    tmp.remove(END_ARK_MARK)
+                    feats.append(tmp)
+                    # return current ark file
+                    yield utt, str2float_array(feats)
+                    utt = ''
+                    feats = []
+                else:
+                    # read features
+                    feats.append(line.strip().split())
+        print("Read %d files..." % cnt)
+
+
 def read_ark_file(file_name):
+    """
+    Read all ark files in memory inside storage 'file_name',
+    lazy approach
+    """
     list_utt_feat = []
     cnt = 0
     with open(file_name, 'r') as file:
@@ -50,10 +89,10 @@ def read_mlf(fname):
         ut_id = None
         alignment = []
         for line in file:
-            if '.lab' in line: # utterance file name
+            if '.lab' in line:  # utterance file name
                 ut_id = line.strip()
-            elif '.' == line.strip(): # end of utterance
-               res[ut_id] = alignment
+            elif '.' == line.strip():  # end of utterance
+                res[ut_id] = alignment
             else:
                 sep = line.strip()
                 sep = sep.split(' ')
