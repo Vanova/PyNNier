@@ -30,6 +30,10 @@ def scan_folder(lang_dir, attrib_cls):
     return flist
 
 
+def score_mean(filter_cls, binarise=True):
+    pass
+
+
 # def scores_content():
 # + number of files per each language
 
@@ -46,7 +50,8 @@ def scan_folder(lang_dir, attrib_cls):
 
 if __name__ == '__main__':
     root_path = '/sipudata/pums/ivan/projects_data/mulan_lre17/train'
-    type = 'place'
+    type_at = 'place'
+    filter_cls = ['other', 'silence']
     # window 25ms, shift 10ms
     wnd = 0.025
     shift = 2
@@ -91,8 +96,13 @@ if __name__ == '__main__':
         all_mean = np.exp(np.log(all_mean) - np.log(cnt_arks))
         print(all_mean)
 
+        # filter attribute classes
+        id_del = [ATTRIBUTES_CLS['manner'].index(f) for f in filter_cls]
+        all_mean = np.delete(all_mean, id_del, 1)
+        cls_clean = [a for a in ATTRIBUTES_CLS['manner'] if a not in filter_cls]
+
         # plot total mean per each language
-        df = pd.DataFrame(np.array([all_mean.squeeze(), all_mean.squeeze()]), columns=ATTRIBUTES_CLS['manner'])
+        df = pd.DataFrame(np.array([all_mean.squeeze(), all_mean.squeeze()]), columns=cls_clean)
         df.plot(kind='barh', stacked=True)
         plt.yticks(range(2), ['lang1', 'lang2'])
         plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
@@ -103,6 +113,8 @@ if __name__ == '__main__':
         # loop through language clusters folder and calculate stats per language
         lang_dirs = np.sort(os.listdir(root_path))
         lang_mean = []
+        # filter attribute classes
+        id_del = [ATTRIBUTES_CLS[type_at].index(f) for f in filter_cls]
         for ldir in lang_dirs:
             # ===
             # number of utterance per language
@@ -125,9 +137,10 @@ if __name__ == '__main__':
             # ===
             # distribution per each language and plotting
             # ===
+        # TODO filter other and silence
             cnt_arks = 0
-            all_mean = np.zeros((1, len(ATTRIBUTES_CLS[type])))
-            for f in scan_folder(ldir, type):
+            all_mean = np.zeros((1, len(ATTRIBUTES_CLS[type_at])))
+            for f in scan_folder(ldir, type_at):
                 arks = kio.ArkReader(path.join(root_path, f))
                 for ut, feat in arks.next_ark():
                     bin = metr.step(feat, 0.5)  # TODO without binarization
@@ -139,9 +152,13 @@ if __name__ == '__main__':
             all_mean = np.exp(np.log(all_mean) - np.log(cnt_arks))
             lang_mean.append(all_mean.squeeze())
             print(all_mean)
+        # filter attribute classes
+        lang_mean = np.array(lang_mean)
+        mean_clean = np.delete(lang_mean, id_del, 1)
+        cls_clean = [a for a in ATTRIBUTES_CLS[type_at] if a not in filter_cls]
         # plot total mean per each language
-        df = pd.DataFrame(np.array(lang_mean), columns=ATTRIBUTES_CLS[type])
+        df = pd.DataFrame(mean_clean, columns=cls_clean)
         df.plot(kind='barh', stacked=True)
         plt.yticks(range(len(lang_dirs)), lang_dirs)
         plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
-        plt.savefig(type + '.png', bbox_inches="tight")
+        plt.savefig(type_at + '.png', bbox_inches="tight")
