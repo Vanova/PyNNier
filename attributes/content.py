@@ -49,7 +49,7 @@ if __name__ == '__main__':
     wnd = 0.025
     shift = 2
     n_jobs = 1
-    debug = True
+    debug = False
 
     if debug:
         file_name = '../utils/kaldi/manner.ark'
@@ -123,8 +123,8 @@ if __name__ == '__main__':
             # distribution per each language and plotting
             # ===
             cnt_arks = 0
-            all_mean = np.zeros((1, len(ATTRIBUTES_CLS['manner'])))
-            for f in scan_folder(ldir, 'manner'):
+            all_mean = np.zeros((1, len(ATTRIBUTES_CLS['place'])))
+            for f in scan_folder(ldir, 'place'):
                 arks = kio.ArkReader(path.join(root_path, f))
                 for ut, feat in arks.next_ark():
                     bin = metr.step(feat, 0.5)
@@ -137,7 +137,7 @@ if __name__ == '__main__':
             lang_mean.append(all_mean.squeeze())
             print(all_mean)
         # plot total mean per each language
-        df = pd.DataFrame(np.array(lang_mean), columns=ATTRIBUTES_CLS['manner'])
+        df = pd.DataFrame(np.array(lang_mean), columns=ATTRIBUTES_CLS['place'])
         df.plot(kind='barh', stacked=True)
         plt.yticks(range(len(lang_dirs)), lang_dirs)
-        plt.savefig('manner.png')
+        plt.savefig('place.png')
