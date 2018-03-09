@@ -8,6 +8,7 @@ import metrics.metrics as metr
 import utils.kaldi.io as kio
 import pandas as pd
 import matplotlib.pyplot as plt
+
 plt.switch_backend('agg')
 plt.style.use('seaborn')
 
@@ -30,14 +31,14 @@ def scan_folder(lang_dir, attrib_cls):
 
 
 # def scores_content():
-    # + number of files per each language
+# + number of files per each language
 
-    # - hours per each language
+# - hours per each language
 
-    # distributions of scores th = 0.5
+# distributions of scores th = 0.5
 
-    # score_file = path.join(ROOT_PATH, p)
-    # score = kio.read_ark_file(score_file) # TODO make iterator
+# score_file = path.join(ROOT_PATH, p)
+# score = kio.read_ark_file(score_file) # TODO make iterator
 
 
 # define sampling: because some languages have more speech data
@@ -45,10 +46,11 @@ def scan_folder(lang_dir, attrib_cls):
 
 if __name__ == '__main__':
     root_path = '/sipudata/pums/ivan/projects_data/mulan_lre17/train'
+    type = 'place'
     # window 25ms, shift 10ms
     wnd = 0.025
     shift = 2
-    n_jobs = 1
+    n_jobs = 20
     debug = False
 
     if debug:
@@ -72,7 +74,7 @@ if __name__ == '__main__':
         nframes = 0
         for ut, feat in arks.next_ark():
             nframes += feat.shape[0]
-        sec = nframes * wnd/shift
+        sec = nframes * wnd / shift
         print('Total length: %s' % str(sec / 3600.))
 
         # distribution: mean of file and across files
@@ -93,8 +95,9 @@ if __name__ == '__main__':
         df = pd.DataFrame(np.array([all_mean.squeeze(), all_mean.squeeze()]), columns=ATTRIBUTES_CLS['manner'])
         df.plot(kind='barh', stacked=True)
         plt.yticks(range(2), ['lang1', 'lang2'])
-        # plt.show()
-        plt.savefig('manner.png')
+        plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
+        plt.show()
+        plt.savefig('manner.png', bbox_inches="tight")
 
     else:
         # loop through language clusters folder and calculate stats per language
@@ -123,11 +126,11 @@ if __name__ == '__main__':
             # distribution per each language and plotting
             # ===
             cnt_arks = 0
-            all_mean = np.zeros((1, len(ATTRIBUTES_CLS['place'])))
-            for f in scan_folder(ldir, 'place'):
+            all_mean = np.zeros((1, len(ATTRIBUTES_CLS[type])))
+            for f in scan_folder(ldir, type):
                 arks = kio.ArkReader(path.join(root_path, f))
                 for ut, feat in arks.next_ark():
-                    bin = metr.step(feat, 0.5)
+                    bin = metr.step(feat, 0.5)  # TODO without binarization
                     m = np.mean(bin, axis=0, keepdims=True)
                     all_mean += m
                     cnt_arks += 1
@@ -137,7 +140,8 @@ if __name__ == '__main__':
             lang_mean.append(all_mean.squeeze())
             print(all_mean)
         # plot total mean per each language
-        df = pd.DataFrame(np.array(lang_mean), columns=ATTRIBUTES_CLS['place'])
+        df = pd.DataFrame(np.array(lang_mean), columns=ATTRIBUTES_CLS[type])
         df.plot(kind='barh', stacked=True)
         plt.yticks(range(len(lang_dirs)), lang_dirs)
-        plt.savefig('place.png')
+        plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
+        plt.savefig(type + '.png', bbox_inches="tight")
