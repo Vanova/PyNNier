@@ -8,6 +8,7 @@ import metrics.metrics as metr
 import utils.kaldi.io as kio
 import pandas as pd
 import matplotlib.pyplot as plt
+import threading
 
 plt.switch_backend('agg')
 plt.style.use('seaborn')
@@ -30,7 +31,8 @@ def scan_folder(lang_dir, attrib_cls):
     return flist
 
 
-def score_mean(filter_cls, binarise=True):
+# @timeit
+def job_score_mean(filter_cls, binarise=True):
     pass
 
 
@@ -57,6 +59,8 @@ if __name__ == '__main__':
     shift = 2
     n_jobs = 20
     debug = False
+
+    # TODO clean up code + parallel
 
     if debug:
         file_name = '../utils/kaldi/manner.ark'
@@ -137,7 +141,6 @@ if __name__ == '__main__':
             # ===
             # distribution per each language and plotting
             # ===
-        # TODO filter other and silence
             cnt_arks = 0
             all_mean = np.zeros((1, len(ATTRIBUTES_CLS[type_at])))
             for f in scan_folder(ldir, type_at):

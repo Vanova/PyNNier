@@ -3,6 +3,7 @@ from scipy import signal
 from scipy.io import wavfile
 import matplotlib.pyplot as plt
 import utils.kaldi.io as kio
+import utils.plot_styles as plts
 
 ATTRIBUTE_CLS = ['fricative', 'glide', 'nasal', 'oth', 'sil', 'stop', 'voiced', 'vowel']
 
@@ -49,7 +50,7 @@ freqs, times, spectrogram = log_spectrogram(samples, sample_rate)
 # number of frames to plot
 total_time = len(samples) / float(sample_rate)
 N_spec = 300
-N_sig = N_spec * sample_rate * total_time / len(spectrogram) # number of audio sample
+N_sig = int(N_spec * sample_rate * total_time / len(spectrogram)) # number of audio sample
 length = N_sig / sample_rate
 
 signal_time = np.linspace(0, length, N_sig)
@@ -74,7 +75,7 @@ axs[1].imshow(spectrogram.T[:, :N_spec], aspect='auto', origin='lower', interpol
            extent=[spec_time.min(), spec_time.max(), freqs.min(), freqs.max()])
 axs[1].set_yticks(freqs[::60])
 axs[1].set_xticks(spec_time[::30])
-axs[1].set_ylabel('Hz')
+axs[1].set_ylabel('Hz', rotation=0, ha='right', va='center')
 axs[1].set_xticks([], [])
 
 plot_phone_alignment(axs[1], phone_ali=ali['"*/GEcall-101-G.story-bt.lab"'])
@@ -83,7 +84,8 @@ cnt = 2
 for i, lab in enumerate(ATTRIBUTE_CLS):
     if (lab is not 'oth') and (lab is not 'sil'):
         axs[cnt].plot(spec_time, Y_prob[:, i])
-        axs[cnt].set_ylabel(lab, rotation=60)
+        axs[cnt].set_ylabel(lab, rotation=0, fontsize=plts.label_font['size'],
+                            ha='right', va='center')
         axs[cnt].set_xlim([spec_time[0], spec_time[-1]])
         axs[cnt].set_ylim([0, 1.1])
         axs[cnt].set_xticks([], [])
@@ -91,23 +93,5 @@ for i, lab in enumerate(ATTRIBUTE_CLS):
         cnt += 1
 axs[cnt-1].set_xlim([spec_time[0], spec_time[-1]])
 axs[cnt-1].set_xticks(spec_time[::16])
-axs[cnt-1].set_xlabel('Seconds')
+axs[cnt-1].set_xlabel('Seconds', fontsize=plts.label_font['size'])
 plt.show()
-
-
-# fig = plt.figure(figsize=(8, 5))
-# # audio signal
-# ax1 = fig.add_subplot(211)
-# ax1.plot(signal_time, samples[:N_sig])
-# ax1.set_title('Raw wave of ' + filename)
-# ax1.set_ylabel('Amplitude')
-# # spectrogram
-# ax2 = fig.add_subplot(212)
-# ax2.imshow(spectrogram.T[:, :N_spec], aspect='auto', origin='lower',
-#            extent=[spec_time.min(), spec_time.max(), freqs.min(), freqs.max()])
-# ax2.set_yticks(freqs[::16])
-# ax2.set_xticks(spec_time[::30])
-# ax2.set_title('Spectrogram of ' + filename)
-# ax2.set_ylabel('Freqs in Hz')
-# ax2.set_xlabel('Seconds')
-# plt.show()

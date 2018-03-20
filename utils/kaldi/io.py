@@ -25,13 +25,13 @@ class ArkReader(object):
             feats = []
             for line in file:
                 # start of the features
-                if '[' in line:
+                if START_ARK_MARK in line:
                     utt = line.strip().split()
                     utt.remove(START_ARK_MARK)
                     utt = utt[0]
                     cnt += 1
                 # end of the features
-                elif ']' in line:
+                elif END_ARK_MARK in line:
                     tmp = line.strip().split()
                     tmp.remove(END_ARK_MARK)
                     feats.append(tmp)
