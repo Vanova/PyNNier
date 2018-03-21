@@ -2,12 +2,14 @@
 Speech attributes content analysis in NIST LRE 2017 dataset
 """
 import os
+import time
 import os.path as path
 import numpy as np
 import metrics.metrics as metr
 import utils.kaldi.io as kio
 import pandas as pd
 import matplotlib.pyplot as plt
+import joblib as jl
 
 plt.switch_backend('agg')
 plt.style.use('seaborn')
@@ -22,7 +24,6 @@ ATTRIBUTES_CLS = {'manner': ['fricative', 'glides', 'nasal', 'other', 'silence',
 
 
 def scan_folder(lang_dir, attrib_cls):  # TODO scan by name tamplate!!!
-    print('Language dir: %s' % lang_dir)
     flist = []
     for j in xrange(n_jobs):
         p = '%s/res/%s/scores.%i.txt' % (lang_dir, attrib_cls, j + 1)
@@ -63,8 +64,27 @@ def utterance_length(file_name, window_sz=20, shift_sz=10, sample_rate=8000):
     return sec
 
 
-if __name__ == '__main__':
+def language_utt_num_async(lang_dirs, attrib_type, n_jobs, backend=None):
+    res = {}
+    with jl.Parallel(n_jobs=n_jobs, backend=backend) as parallel:
+        for ldir in lang_dirs:
+            cnt = parallel(jl.delayed(utterance_number)(path.join(root_path, f))
+                           for f in scan_folder(ldir, attrib_type))
+            res[ldir] = sum(cnt)
+    return res
 
+
+def language_utt_len_async(lang_dirs, attrib_type, n_jobs, backend=None):
+    res = {}
+    with jl.Parallel(n_jobs=n_jobs, backend=backend) as parallel:
+        for ldir in lang_dirs:
+            ts = parallel(jl.delayed(utterance_length)(path.join(root_path, f))
+                          for f in scan_folder(ldir, attrib_type))
+            res[ldir] = sum(ts) / 3600.
+    return res
+
+
+if __name__ == '__main__':
     attrib_type = 'manner'
     filter_cls = ['other', 'silence']
     debug = True
@@ -81,50 +101,69 @@ if __name__ == '__main__':
     # ===
     # number of utterance per language
     # ===
+    start = time.time()
     for ldir in lang_dirs:
         cnt_arks = 0
         for f in scan_folder(ldir, attrib_type):
             cnt_arks += utterance_number(path.join(root_path, f))
         print('Utterances: %d' % cnt_arks)
+    end = time.time()
+    print('Time single: %f' % (end - start))
+
+    start = time.time()
+    r = language_utt_num_async(lang_dirs, attrib_type, n_jobs, 'multiprocessing')
+    end = time.time()
+    print('Time || : %f' % (end - start))
+    print(r)
 
     # ===
     # hours per each language
     # ===
+    start = time.time()
     for ldir in lang_dirs:
         tot_time = 0
         for f in scan_folder(ldir, attrib_type):
             tot_time += utterance_length(path.join(root_path, f))
         print('Total length: %s' % str(tot_time / 3600.))
-    # ===
-    # distribution per each language and plotting
-    # ===
-    lang_mean = []
-    for ldir in lang_dirs:
-        cnt_arks = 0
-        all_mean = np.zeros((1, len(ATTRIBUTES_CLS[attrib_type])))
-        for f in scan_folder(ldir, attrib_type):
-            arks = kio.ArkReader(path.join(root_path, f))
-            for ut, feat in arks.next_ark():
-                bin = metr.step(feat, 0.5)  # TODO without binarization
-                m = np.mean(bin, axis=0, keepdims=True)
-                all_mean += m
-                cnt_arks += 1
-        # average across all files
-        # calculation: tot_mean /= cnt_arks
-        all_mean = np.exp(np.log(all_mean) - np.log(cnt_arks))
-        lang_mean.append(all_mean.squeeze())
-        print(all_mean)
-        # TODO dump means
+    end = time.time()
+    print('Time single: %f' % (end - start))
 
-    # filter attribute classes
-    lang_mean = np.array(lang_mean)
-    id_del = [ATTRIBUTES_CLS[attrib_type].index(f) for f in filter_cls]
-    mean_clean = np.delete(lang_mean, id_del, 1)
-    cls_clean = [a for a in ATTRIBUTES_CLS[attrib_type] if a not in filter_cls]
-    # plot total mean per each language
-    df = pd.DataFrame(mean_clean, columns=cls_clean)
-    df.plot(kind='barh', stacked=True)
-    plt.yticks(range(len(lang_dirs)), lang_dirs)
-    plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
-    plt.show()
-    plt.savefig(attrib_type + '.png', bbox_inches="tight")
+    start = time.time()
+    r = language_utt_len_async(lang_dirs, attrib_type, n_jobs, 'multiprocessing')
+    end = time.time()
+    print('Time || : %f' % (end - start))
+    print(r)
+
+        # ===
+        # distribution per each language and plotting
+        # ===
+        # lang_mean = []
+        # for ldir in lang_dirs:
+        #     cnt_arks = 0
+        #     all_mean = np.zeros((1, len(ATTRIBUTES_CLS[attrib_type])))
+        #     for f in scan_folder(ldir, attrib_type):
+        #         arks = kio.ArkReader(path.join(root_path, f))
+        #         for ut, feat in arks.next_ark():
+        #             bin = metr.step(feat, 0.5)  # TODO without binarization
+        #             m = np.mean(bin, axis=0, keepdims=True)
+        #             all_mean += m
+        #             cnt_arks += 1
+        #     # average across all files
+        #     # calculation: tot_mean /= cnt_arks
+        #     all_mean = np.exp(np.log(all_mean) - np.log(cnt_arks))
+        #     lang_mean.append(all_mean.squeeze())
+        #     print(all_mean)
+        #     # TODO dump means
+        #
+        # # filter attribute classes
+        # lang_mean = np.array(lang_mean)
+        # id_del = [ATTRIBUTES_CLS[attrib_type].index(f) for f in filter_cls]
+        # mean_clean = np.delete(lang_mean, id_del, 1)
+        # cls_clean = [a for a in ATTRIBUTES_CLS[attrib_type] if a not in filter_cls]
+        # # plot total mean per each language
+        # df = pd.DataFrame(mean_clean, columns=cls_clean)
+        # df.plot(kind='barh', stacked=True)
+        # plt.yticks(range(len(lang_dirs)), lang_dirs)
+        # plt.legend(bbox_to_anchor=(1.04, 1), borderaxespad=0)
+        # plt.show()
+        # plt.savefig(attrib_type + '.png', bbox_inches="tight")
