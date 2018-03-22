@@ -11,6 +11,7 @@ import utils.kaldi.io as kio
 import pandas as pd
 import matplotlib.pyplot as plt
 import joblib as jl
+import collections
 
 plt.switch_backend('agg')
 plt.style.use('seaborn')
@@ -96,8 +97,24 @@ def language_utt_len_async(lang_paths, attrib_type, n_jobs, backend=None):
     return res
 
 
+def language_mean_mean_async(lang_paths, attrib_type, n_jobs, backend=None):
+    res = {}
+    with jl.Parallel(n_jobs=n_jobs, verbose=2, backend=backend) as parallel:
+        ts = parallel(jl.delayed(utterance_mean_mean)(lp, attrib_type)
+                      for lp in lang_paths)
+    for m, lang in zip(ts, lang_paths):
+        res[path.split(lang)[-1]] = m
+    return res
+
+
+def update_store(store, langs, stat, name):
+    for ln in langs:
+        store[ln][name] = stat[ln]
+
+
 if __name__ == '__main__':
     attrib_type = 'manner'
+    dump_file = '%s_stat.pkl' % attrib_type
     filter_cls = ['other', 'silence']
     debug = True
 
@@ -107,80 +124,52 @@ if __name__ == '__main__':
     else:
         root_path = '/sipudata/pums/ivan/projects_data/mulan_lre17/train'
         n_jobs = 20
+    # if dump exist, just update it
+    if os.path.isfile(dump_file):
+        pkl_file = open(dump_file, 'rb')
+        stats_store = pickle.load(pkl_file)
+        pkl_file.close()
+    else:
+        stats_store = collections.defaultdict(dict)
 
-    # loop through language clusters folder and calculate stats per language
     lang_dirs = np.sort(os.listdir(root_path)).tolist()
     lang_paths = [path.join(root_path, ld) for ld in lang_dirs]
     # ===
     # number of utterance per language
     # ===
     start = time.time()
-    for lp in lang_paths:
-        cnt_arks = 0
-        for f in scan_folder(lp, attrib_type):
-            cnt_arks += utterance_number(f)
-        print('Utterances: %d' % cnt_arks)
-    end = time.time()
-    print('Time single: %f' % (end - start))
-
-    start = time.time()
     r = language_utt_num_async(lang_paths, attrib_type, n_jobs, 'multiprocessing')
     end = time.time()
-    print('Time || : %f' % (end - start))
-    print(r)
-
+    print('Calc number || : %f' % (end - start))
+    update_store(stats_store, lang_dirs, r, 'number')
     # ===
     # hours per each language
     # ===
     start = time.time()
-    for lp in lang_paths:
-        tot_time = 0
-        for f in scan_folder(lp, attrib_type):
-            tot_time += utterance_length(f)
-        print('Total length: %s' % str(tot_time / 3600.))
-    end = time.time()
-    print('Time single: %f' % (end - start))
-
-    start = time.time()
     r = language_utt_len_async(lang_paths, attrib_type, n_jobs, 'multiprocessing')
     end = time.time()
-    print('Time || : %f' % (end - start))
-    print(r)
-
+    print('Calc length || : %f' % (end - start))
+    update_store(stats_store, lang_dirs, r, 'length')
     # ===
     # distribution per each language and plotting
     # ===
-    store_mean = {}
-    # for lp in lang_paths:
-    #     cnt_arks = 0
-    #     lang_mean = np.zeros((len(ATTRIBUTES_CLS[attrib_type])))
-    #     for f in scan_folder(lp, attrib_type):
-    #         arks = kio.ArkReader(f)
-    #         for ut, feat in arks.next_ark():
-    #             bin = metr.step(feat, 0.5)  # TODO try without binarization
-    #             m = np.mean(bin, axis=0)
-    #             lang_mean += m
-    #             cnt_arks += 1
-    #     # average across all files
-    #     # calculation: tot_mean /= cnt_arks
-    #     lang_mean = np.exp(np.log(lang_mean) - np.log(cnt_arks))
-    #     store_mean[path.split(lp)[-1]] = lang_mean
-    # print(store_mean)
-    #
-    # store_mean = {}
-    # for lp in lang_paths:
-    #     store_mean[path.split(lp)[-1]] = {}
-    #     store_mean[path.split(lp)[-1]]['mean_mean'] = utterance_mean_mean(lp, attrib_type)
-    # print(store_mean)
-    #
-    # output = open('%s_stat.pkl' % attrib_type, 'wb')
-    # pickle.dump(store_mean, output)
-    # output.close()
+    start = time.time()
+    r = language_mean_mean_async(lang_paths, attrib_type, n_jobs, 'multiprocessing')
+    end = time.time()
+    print('Calc mean_mean || : %f' % (end - start))
+    update_store(stats_store, lang_dirs, r, 'mean_mean')
+    print(dict(stats_store))
+    # ===
+    # dump statistics
+    # ===
+    out_file = open(dump_file, 'wb')
+    pickle.dump(stats_store, out_file)
+    out_file.close()
     # pkl_file = open('%s_stat.pkl' % attrib_type, 'rb')
-    # data1 = pickle.load(pkl_file)
+    # stats_store = pickle.load(pkl_file)
     # pkl_file.close()
-    #     # TODO dump means
-    #
+
+    # TODO plot stat
     # # filter attribute classes
     # lang_mean = np.array(lang_mean)
     # id_del = [ATTRIBUTES_CLS[attrib_type].index(f) for f in filter_cls]

@@ -14,6 +14,12 @@ class ArkReader(object):
                 match = [line for line in file if pattern in line]
         return match
 
+    @staticmethod
+    def ark_number(data_file):
+        match = ArkReader.grep(data_file, START_ARK_MARK)
+        return len(match)
+
+
     def next_ark(self):
         """
         Read file with arks,
@@ -42,7 +48,7 @@ class ArkReader(object):
                 else:
                     # read features
                     feats.append(line.strip().split())
-        # print("Read %d files from: %s" % (cnt, self.data_file))
+
 
 
 def read_ark_file(file_name):
