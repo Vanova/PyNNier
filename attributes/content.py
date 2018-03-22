@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import joblib as jl
 import collections
 
-plt.switch_backend('agg')
+# plt.switch_backend('agg')
 plt.style.use('seaborn')
 
 MANNER_CLS = []
@@ -77,9 +77,29 @@ def utterance_mean_mean(lang_path, attrib_type):
     return lang_mean
 
 
+def utterance_global_mean(lang_path, attrib_type):
+    """
+    Return mean of attributes in language cluster:
+    mean across utterance and across language cluster
+    """
+    cnt_frame = 0
+    accum = np.zeros((len(ATTRIBUTES_CLS[attrib_type])))
+    for f in scan_folder(lang_path, attrib_type):
+        arks = kio.ArkReader(f)
+        for ut, feat in arks.next_ark():
+            bin = metr.step(feat, 0.5)  # TODO try without binarization
+            m = np.sum(bin, axis=0)
+            accum += m
+            cnt_frame += feat.shape[0]
+    # average across all files
+    # calculation: tot_mean /= cnt_arks
+    lang_mean = np.exp(np.log(accum) - np.log(cnt_frame))
+    return lang_mean
+
+
 def language_utt_num_async(lang_paths, attrib_type, n_jobs, backend=None):
     res = {}
-    with jl.Parallel(n_jobs=n_jobs, backend=backend) as parallel:
+    with jl.Parallel(n_jobs=n_jobs, verbose=2, backend=backend) as parallel:
         for lp in lang_paths:
             cnt = parallel(jl.delayed(utterance_number)(f)
                            for f in scan_folder(lp, attrib_type))
@@ -89,7 +109,7 @@ def language_utt_num_async(lang_paths, attrib_type, n_jobs, backend=None):
 
 def language_utt_len_async(lang_paths, attrib_type, n_jobs, backend=None):
     res = {}
-    with jl.Parallel(n_jobs=n_jobs, backend=backend) as parallel:
+    with jl.Parallel(n_jobs=n_jobs, verbose=2, backend=backend) as parallel:
         for lp in lang_paths:
             ts = parallel(jl.delayed(utterance_length)(f)
                           for f in scan_folder(lp, attrib_type))
@@ -101,6 +121,16 @@ def language_mean_mean_async(lang_paths, attrib_type, n_jobs, backend=None):
     res = {}
     with jl.Parallel(n_jobs=n_jobs, verbose=2, backend=backend) as parallel:
         ts = parallel(jl.delayed(utterance_mean_mean)(lp, attrib_type)
+                      for lp in lang_paths)
+    for m, lang in zip(ts, lang_paths):
+        res[path.split(lang)[-1]] = m
+    return res
+
+
+def language_global_mean_async(lang_paths, attrib_type, n_jobs, backend=None):
+    res = {}
+    with jl.Parallel(n_jobs=n_jobs, verbose=2, backend=backend) as parallel:
+        ts = parallel(jl.delayed(utterance_global_mean)(lp, attrib_type)
                       for lp in lang_paths)
     for m, lang in zip(ts, lang_paths):
         res[path.split(lang)[-1]] = m
@@ -151,13 +181,22 @@ if __name__ == '__main__':
     print('Calc length || : %f' % (end - start))
     update_store(stats_store, lang_dirs, r, 'length')
     # ===
-    # distribution per each language and plotting
+    # mean of mean across utterances
     # ===
     start = time.time()
     r = language_mean_mean_async(lang_paths, attrib_type, n_jobs, 'multiprocessing')
     end = time.time()
     print('Calc mean_mean || : %f' % (end - start))
     update_store(stats_store, lang_dirs, r, 'mean_mean')
+    print(dict(stats_store))
+    # ===
+    # Global mean across utterances
+    # ===
+    start = time.time()
+    r = language_global_mean_async(lang_paths, attrib_type, n_jobs, 'multiprocessing')
+    end = time.time()
+    print('Calc global_mean || : %f' % (end - start))
+    update_store(stats_store, lang_dirs, r, 'global_mean')
     print(dict(stats_store))
     # ===
     # dump statistics
