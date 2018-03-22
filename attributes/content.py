@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import joblib as jl
 import collections
 
-# plt.switch_backend('agg')
+plt.switch_backend('agg')
 plt.style.use('seaborn')
 
 MANNER_CLS = []
