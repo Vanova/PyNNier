@@ -29,6 +29,7 @@ class Stats(object):
     len = 'length'
     mean_mean = 'mean_mean'
     gmean = 'global_mean'
+    cont_mean = 'continues_mean'
     hist = 'histogram'
 
 
@@ -84,7 +85,7 @@ def utterance_mean_mean(lang_path, attrib_type):
     return lang_mean
 
 
-def utterance_global_mean(lang_path, attrib_type):
+def utterance_global_mean(lang_path, attrib_type, threshold=False):
     """
     Return mean of attributes in language cluster:
     mean across utterance and across language cluster
@@ -94,8 +95,9 @@ def utterance_global_mean(lang_path, attrib_type):
     for f in scan_folder(lang_path, attrib_type):
         arks = kio.ArkReader(f)
         for ut, feat in arks.next_ark():
-            bin = metr.step(feat, 0.5)  # TODO try without binarization
-            m = np.sum(bin, axis=0)
+            if threshold:
+                feat = metr.step(feat, 0.5)
+            m = np.sum(feat, axis=0)
             accum += m
             cnt_frame += feat.shape[0]
     # average across all files
@@ -160,7 +162,6 @@ def language_global_mean_async(lang_paths, attrib_type, n_jobs, backend=None):
         res[path.split(lang)[-1]] = m
     return res
 
-
 def language_hist_async(lang_paths, attrib_type, n_jobs, backend=None):
     res = {}
     ts = jl.Parallel(n_jobs=n_jobs, verbose=2, backend=backend)(
@@ -192,13 +193,13 @@ def prepare_mean(stats_store, langs, stat, scale=True):
 
 
 if __name__ == '__main__':
-    attrib_type = 'manner'
+    attrib_type = 'place'
     dump_file = '%s_stat.pkl' % attrib_type
     cls_filter = ['other', 'silence']
     cls_clean = [a for a in ATTRIBUTES_CLS[attrib_type] if a not in cls_filter]
     cls_id_del = [ATTRIBUTES_CLS[attrib_type].index(f) for f in cls_filter]
 
-    debug = True
+    debug = False
 
     if debug:
         root_path = './data/lre'
@@ -257,9 +258,19 @@ if __name__ == '__main__':
         update_store(stats_store, lang_dirs, r, Stats.gmean)
         print(dict(stats_store))
     # ===
+    # continues mean across utterances
+    # ===
+    if check_key(stats_store, Stats.cont_mean):
+        start = time.time()
+        r = language_global_mean_async(lang_paths, attrib_type, len(lang_dirs), 'multiprocessing')
+        end = time.time()
+        print('Calc %s || : %f' % (Stats.cont_mean, (end - start)))
+        update_store(stats_store, lang_dirs, r, Stats.cont_mean)
+        print(dict(stats_store))
+    # ===
     # Histograms
     # ===
-    if not check_key(stats_store, Stats.hist):
+    if check_key(stats_store, Stats.hist):
         start = time.time()
         r = language_hist_async(lang_paths, attrib_type, len(lang_dirs), 'multiprocessing')
         end = time.time()
@@ -282,8 +293,8 @@ if __name__ == '__main__':
     pltr.plot_stackbars(mean_clean, cls_clean, lang_dirs, '%s_%s.png' % (attrib_type, Stats.mean_mean))
 
     # global mean
-    mean_clean = prepare_mean(stats_store, lang_dirs, Stats.gmean)
-    pltr.plot_stackbars(mean_clean, cls_clean, lang_dirs, '%s_%s.png' % (attrib_type, Stats.gmean))
+    mean_clean = prepare_mean(stats_store, lang_dirs, Stats.cont_mean)
+    pltr.plot_stackbars(mean_clean, cls_clean, lang_dirs, '%s_%s.png' % (attrib_type, Stats.cont_mean))
 
     # histogram
     # bins_arr = np.linspace(0., 1., N_HIST)
