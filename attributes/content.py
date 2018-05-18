@@ -22,7 +22,7 @@ ATTRIBUTES_CLS = {'manner': ['fricative', 'glides', 'nasal', 'other', 'silence',
                             'low', 'mid', 'other', 'palatal', 'silence', 'velar'],
                   'fusion_manner': [],
                   'fusion_place': []}
-N_HIST = 100
+N_HIST = 10
 
 
 class Stats(object):
@@ -322,6 +322,7 @@ if __name__ == '__main__':
     from bokeh.models import ColumnDataSource, FixedTicker, PrintfTickFormatter
     from bokeh.plotting import figure
     import colorcet as cc
+    from scipy import stats
 
     def joy(category, data, scale=1.):
         return list(zip([category] * len(data), scale * data))
@@ -354,7 +355,7 @@ if __name__ == '__main__':
     # ===
     # Violin Figures
     # ===
-    fig, axs = plt.subplots(len(lang_dirs), 1, figsize=(20, 30), facecolor='w', edgecolor='k')
+    fig, axs = plt.subplots(len(lang_dirs), 1, figsize=(10, 30), facecolor='w', edgecolor='k')
     fig.subplots_adjust(hspace=0.01, wspace=.5)
     axs = axs.ravel()
     xp = np.linspace(0., 1.1, 100)
@@ -362,14 +363,25 @@ if __name__ == '__main__':
     for i, ld in enumerate(lang_dirs):
         nframes = stats_store[ld][Stats.len] * 3600. / 10e-3
         h = stats_store[ld][Stats.hist] / nframes
-        pos = range(1, 2 * len(ATTRIBUTES_CLS[attrib_type]), 2)
+        pos = range(1, len(ATTRIBUTES_CLS[attrib_type]) + 1)
         yp = []
         for at_id, at in enumerate(ATTRIBUTES_CLS[attrib_type]):
+            # 1.
             # pdf = gaussian_kde(h[at_id, :])
             # yp.append(pdf(xr))
-            yp.append(h[at_id, :])
+            # 2.
+            # yp.append(h[at_id, :])
+            # 3.
+            # ab, bb, cb, db = stats.beta.fit(h[at_id, :])
+            # yp.append(stats.beta.pdf(xp, ab, bb, cb, db))
+            # 4.
+            # ag, bg, cg = stats.gamma.fit(h[at_id, :])
+            # yp.append(stats.gamma.pdf(xp, ag, bg, cg))
+            # 5.
+            ag, bg = stats.norm.fit(h[at_id, :])
+            yp.append(stats.gamma.pdf(xp, ag, bg))
 
-        vpart = axs[i].violinplot(yp, pos, points=20, widths=1.5, showmeans=True, showextrema=False, showmedians=False) # showmeans=True, showextrema=True, showmedians=True
+        vpart = axs[i].violinplot(yp, pos, points=100, widths=1.0, showmeans=True, showextrema=False, showmedians=False) # showmeans=True, showextrema=True, showmedians=True
         axs[i].set_ylabel(ld, rotation=0, fontsize=12, ha='right', va='center')
         axs[i].set_yticks([], [])
         axs[i].set_xticks([], [])

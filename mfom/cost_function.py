@@ -53,12 +53,11 @@ def _uvz_loss_scores(y_true, y_pred, alpha=1., beta=0., is_training=True):
         zeros_avg = np.log(_non_zero_mean_np(zeros_avg))
         # misclassification measure, optimized
         d = -y_pred + y_neg * unit_avg + y_true * zeros_avg
-        # calculate class loss function l
-        l = 1.0 / (1.0 + np.exp(-alpha * d - beta))
     else:
         d = -y_pred + 0.5
-        # calculate class loss function l
-        l = 1.0 / (1.0 + np.exp(-alpha * d - beta))
+
+    # calculate class loss function l
+    l = 1.0 / (1.0 + np.exp(-alpha * d - beta))
     return l
 
 

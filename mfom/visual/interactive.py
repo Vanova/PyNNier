@@ -6,13 +6,10 @@ import mfom.visual.plotter as mfom_plt
 import mfom.utils.toy_scores as mfom_toy
 import mfom.utils.dcase_scores as mfom_dcase
 import mfom.cost_function as mfom_cost
-from mfom.utils.metrics import eer, sklearn_rocch, sklearn_pav
+from metrics.metrics import eer, sklearn_rocch, sklearn_pav, discrete_error_rates
 import numpy as np
 from mpl_toolkits.mplot3d import axes3d
 plt.style.use('seaborn')
-
-
-
 
 # TODO single interactive view template but can add different views
 # scatters(a, b), hist(a, b), ROC, ROCCH
@@ -64,7 +61,7 @@ class IDiscreteErrorRateView(InteractiveBase):
         self.y_score = y_score
         self.idata = idata
         # calculate ROC
-        _, _, fpr, fnr, thresholds = mfom.utils.metrics.discrete_error_rates(y_true, y_score)
+        _, _, fpr, fnr, thresholds = discrete_error_rates(y_true, y_score)
         eer_val = eer(y_true, y_score)
         # plot FNR/FPR distributions
         mfom_plt.view_fnr_fpr_dist(self.ax, fnr, fpr, thresholds, eer_val)
@@ -77,7 +74,7 @@ class IDiscreteErrorRateView(InteractiveBase):
         # clean up the hist plot
         self.ax.cla()
         # redraw
-        _, _, fpr, fnr, thresholds = mfom.utils.metrics.discrete_error_rates(y_true_df, y_score_df)
+        _, _, fpr, fnr, thresholds = discrete_error_rates(y_true_df, y_score_df)
         eer_val = eer(y_true_df, y_score_df)
         # plot FNR/FPR distributions
         mfom_plt.view_fnr_fpr_dist(self.ax, fnr, fpr, thresholds, eer_val)

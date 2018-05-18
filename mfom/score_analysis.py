@@ -10,8 +10,8 @@ from pandas.plotting import scatter_matrix
 import cost_function as mfom_cost
 import mfom.utils.dcase_scores as mfom_dcase
 import mfom.visual.plotter as mfom_plt
-from mfom.utils import toy_scores as toy_sc
-from mfom.utils.metrics import eer, sklearn_rocch, sklearn_pav
+import mfom.utils.toy_scores as toy_sc
+from metrics.metrics import eer, sklearn_rocch, sklearn_pav
 
 
 def toy_score_table(p_df, y_df):
