@@ -1,14 +1,13 @@
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 from multiprocessing.pool import ThreadPool
-import mfom.utils.metrics
 import mfom.visual.plotter as mfom_plt
 import mfom.utils.toy_scores as mfom_toy
 import mfom.utils.dcase_scores as mfom_dcase
-import mfom.cost_function as mfom_cost
-from metrics.metrics import eer, sklearn_rocch, sklearn_pav, discrete_error_rates
+import mfom.npmodel.objectives as mfom_cost
+from metrics.metrics import eer, discrete_error_rates
 import numpy as np
-from mpl_toolkits.mplot3d import axes3d
+
 plt.style.use('seaborn')
 
 # TODO single interactive view template but can add different views

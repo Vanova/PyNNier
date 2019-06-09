@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-import metrics as mfom_metr
+from utils import metrics as mfom_metr
 
 # test scores
 p_test = np.array([[0.6, 0.8, 0.7, 0.9],

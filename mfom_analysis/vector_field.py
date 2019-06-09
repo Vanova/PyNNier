@@ -2,16 +2,11 @@
 Ref. to check: https://youtu.be/1P-MhIL9_7c
 stream slice
 """
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
-from matplotlib.patheffects import withStroke
 from matplotlib import animation
-
-
-def sigma(x):
-    return 1. / (1. + np.exp(-1. * x))
+from mfom.npmodel import objectives as obj
 
 
 def field_3d_view(ax, X, Y, Z, U, V, W, **options):
@@ -62,8 +57,8 @@ def field_2d_view(ax, X, Y, U, V, **options):
 ###
 X, Y = np.meshgrid(np.linspace(-10, 10, 10),
                    np.linspace(-10, 10, 10))
-SX = sigma(X)
-SY = sigma(Y)
+SX = obj.sigma(X)
+SY = obj.sigma(Y)
 ### sigmoid 2D vector field
 fig = plt.figure(figsize=plt.figaspect(0.5))
 N, M = 2, 2
@@ -81,8 +76,8 @@ field_2d_view(ax, X, Y, d1, d2, gradient=True,
               title="Misclassification $D($z$)$ : $(d_1($z$)$, $d_2($z$))$")
 
 ### class loss function ``l_k(d_k)'' 2D vector field
-Lu = sigma(d1)
-Lv = sigma(d2)
+Lu = obj.sigma(d1)
+Lv = obj.sigma(d2)
 ax = fig.add_subplot(N, M, 3)
 field_2d_view(ax, d1, d2, Lu, Lv, gradient=True,
               labels=["$d_1$", "$d_2$"],
@@ -109,9 +104,9 @@ X, Y, Z = np.meshgrid(np.arange(-5, 6, 2),
                       np.arange(-5, 6, 2),
                       np.arange(-5, 6, 2))
 ### Sigmoid outputs, 3D field
-SX = sigma(X)
-SY = sigma(Y)
-SZ = sigma(Z)
+SX = obj.sigma(X)
+SY = obj.sigma(Y)
+SZ = obj.sigma(Z)
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1, projection='3d')
 field_3d_view(ax, X, Y, Z, SX, SY, SZ, arrow=0.9)
@@ -130,9 +125,9 @@ plt.show()
 U = -SX + np.log(0.5 * (np.exp(SY) + np.exp(SZ)))
 V = -SY + np.log((np.exp(SX)))
 W = -SZ + np.log((np.exp(SX)))
-UL = sigma(U)
-VL = sigma(V)
-WL = sigma(W)
+UL = obj.sigma(U)
+VL = obj.sigma(V)
+WL = obj.sigma(W)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1, projection='3d')
@@ -145,9 +140,9 @@ U = -SX + np.log(np.exp(SZ))
 V = -SY + np.log(np.exp(SZ))
 W = -SZ + np.log(0.5 * (np.exp(SX) + np.exp(SY)))
 
-UL = sigma(U)
-VL = sigma(V)
-WL = sigma(W)
+UL = obj.sigma(U)
+VL = obj.sigma(V)
+WL = obj.sigma(W)
 
 fig = plt.figure()
 # fig, ax = plt.subplots(1,1)
@@ -160,9 +155,9 @@ def update_quiver(num, Q, ax, X, Y, Z):
     """updates the horizontal and vertical vector components by a
     fixed increment on each frame
     """
-    SX = sigma(0.01 * num + X)
-    SY = sigma(0.01 * num + Y)
-    SZ = sigma(0.01 * num + Z)
+    SX = obj.sigma(0.01 * num + X)
+    SY = obj.sigma(0.01 * num + Y)
+    SZ = obj.sigma(0.01 * num + Z)
 
     # U = -SX + np.log(np.exp(SZ))
     # V = -SY + np.log(np.exp(SZ))

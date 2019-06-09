@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from mfom.utils import toy_scores as toy_sc
 import mfom.utils.dcase_scores as mfom_dcase
-import cost_function as mfom_cost
+from mfom.npmodel import objectives as mfom_cost
 import matplotlib.cm as cm
 
 # Scale and visualize the embedding vectors

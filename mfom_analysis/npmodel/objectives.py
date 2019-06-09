@@ -1,8 +1,13 @@
 """
 Ref.: see my paper
 """
-import numpy as np
 _EPSILON = 1e-7
+
+# def backend(b):
+#     if b == 'numpy':
+#         import numpy as np
+#     elif b == 'autograd':
+#         import autograd.numpy as np
 
 
 def mfom_eer_uvz(y_true, y_pred, alpha=3., beta=0.):
@@ -68,7 +73,7 @@ def _ovo_loss_scores(y_true, y_pred, alpha=3., beta=0.):
     y_pred = np.clip(y_pred, _EPSILON, 1.0 - _EPSILON)
     nclass = y_true.shape[-1]
     # softmax normalization: ssigma in report
-    norms = _softmax(y_pred)
+    norms = softmax(y_pred)
     # misclassification measure
     d = np.log(1. / (nclass - 1) * (1. / norms - 1.) + _EPSILON)
     # calculate class loss function l
@@ -77,10 +82,14 @@ def _ovo_loss_scores(y_true, y_pred, alpha=3., beta=0.):
 
 
 def _non_zero_mean_np(x):
-    return np.true_divide(x.sum(axis=-1, keepdims=True), (np.abs(x) > 0).sum(axis=-1, keepdims=True))
+    # Average values which meet the criterion > 0
+    mask = (np.abs(x) > _EPSILON)
+    n = np.sum(mask, axis=-1, keepdims=True)
+    return np.sum(x, axis=-1, keepdims=True) / n
+    # return np.true_divide(x.sum(axis=-1, keepdims=True), (np.abs(x) > 0).sum(axis=-1, keepdims=True))
 
 
-def _softmax(x):
+def softmax(x):
     """Compute softmax values for each sets of scores in x.
     x: [samples; dim]
     """
@@ -88,3 +97,7 @@ def _softmax(x):
     e_x = np.exp(xt - np.max(xt))
     s = e_x / e_x.sum(axis=0)
     return s.T
+
+
+def sigma(x):
+    return 1. / (1. + np.exp(-x))
