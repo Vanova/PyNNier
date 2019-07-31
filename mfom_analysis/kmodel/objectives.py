@@ -144,7 +144,7 @@ def mfom_eer_embed(y_true, y_pred):
     """
     alpha = 3.  # 10., 5.0 # 0.1, 1., 10, 5.0, 3.0
     beta = 0.0
-    n_embed = 2
+    n_embed = 5
     l = _uvz_loss_scores(y_true, y_pred, alpha, beta)
     l_score = 1 - l
     for t in xrange(n_embed):
